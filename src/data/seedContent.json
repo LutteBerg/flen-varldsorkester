@@ -1,0 +1,139 @@
+{
+  "global": {
+    "contentVersion": 3,
+    "siteTitle": "Kulturföreningen Flen Världsorkester",
+    "homeIntro": "Musik, konst och kreativa mötesplatser i Amazon, Flen.",
+    "aboutText": "Kulturföreningen Flen Världsorkester driver flera verksamheter i Amazon, Flen. Det är en plats där kultur, musik, konst och textilhantverk möts. Vi är ett hem för kreativa själar, initierat av lokala eldsjälar för att skapa en inkluderande och tillgänglig mötesplats för alla.",
+    "contactInfo": {
+      "address": "Amazon, Flen",
+      "email": "kontakt@amazonflen.se",
+      "phone": "Aktuell information uppdateras löpande."
+    },
+    "socialLinks": [
+      {
+        "platform": "Facebook",
+        "url": "https://www.facebook.com/profile.php?id=100063526774421"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "1",
+      "slug": "flen-varldsorkester",
+      "title": "Flen Världsorkester",
+      "shortDescription": "En levande orkester som förenar musiker från hela världen.",
+      "fullDescription": "Flen Världsorkester är hjärtat av vår musikaliska gemenskap. Vi spelar musik över alla gränser och bjuder in musiker från olika bakgrunder att delta och skapa magi tillsammans. Vår orkester är öppen för alla åldrar och erfarenhetsnivåer, och vi strävar efter hög konstnärlig kvalitet och djupt lokalt engagemang.",
+      "heroMediaType": "video",
+      "coverImage": "/assets/fvo/alma-orkester.JPG",
+      "practicalInfo": "Repetitionstider och scheman publiceras löpande. Kontakta oss gärna för att spela med!",
+      "galleryImages": [
+        { "src": "/assets/fvo/alma-stora kören.JPG", "caption": "Stora kören" },
+        { "src": "/assets/fvo/fvo 1_9.jpg", "caption": "Flen Världsorkester" },
+        { "src": "/assets/fvo/fvo 20240218.jpg", "caption": "Uppträdande 2024" }
+      ],
+      "videos": [
+        {
+          "title": "Flen Världsorkester - Framträdande",
+          "url": "https://www.youtube.com/embed/ZVrUFPsHRkE?si=RN8psEBjMgTFzMEx",
+          "pinned": true
+        },
+        {
+          "title": "Tidigare framträdande 1",
+          "url": "https://www.youtube.com/embed/Ox_E-DrKktw",
+          "pinned": false
+        },
+        {
+          "title": "Tidigare framträdande 2",
+          "url": "https://www.youtube.com/embed/c3TGboknZU4",
+          "pinned": false
+        }
+      ],
+      "childPages": [
+        {
+          "slug": "musaik-projektet",
+          "title": "Musaik Projektet",
+          "shortDescription": "Ett projekt inom Flen Världsorkester med fokus på skapande, gemenskap och musikaliska uttryck.",
+          "body": "Musaik Projektet är en del av Flen Världsorkesters arbete med musik, möten och lokalt engagemang. Här samlas människor genom skapande, gemenskap och musikaliska uttryck för att bygga broar.",
+          "videos": [
+            {
+              "title": "Musaik Projektet",
+              "url": "https://www.youtube.com/embed/BKRG0QnnBLM?si=a0dr6DGTFQ0jI8k1",
+              "pinned": true
+            }
+          ],
+          "galleryImages": [
+            { "src": "/assets/musaik/fvo f&k publik.jpeg", "caption": "Publikbild" },
+            { "src": "/assets/musaik/MUSAIK-stränger.jpg", "caption": "Musaik Stränger" },
+            { "src": "/assets/musaik/lutte-orkester.JPG", "caption": "Lutte med orkestern" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "slug": "jazz-world-music-club",
+      "title": "Jazz & World Music Club",
+      "shortDescription": "Din lokala scen för fantastisk jazz och världsmusik.",
+      "fullDescription": "Ett initiativ som startar våren 2025 tillsammans med Kulturföreningen Flen Världsorkester.\n\nVårt uppdrag är att skapa en inkluderande, tillgänglig kulturell mötesplats med hög konstnärlig kvalitet och starkt lokalt engagemang. Vi erbjuder en scen med återkommande fredagskonserter i en intim miljö med alkoholfritt utbud och ett kafé med hembakat.\n\nFör att alla ska kunna delta har vi låga entréavgifter: 100 kr för vuxna, och helt gratis entré för minderåriga och Kulturskolans elever.\n\nProjektet genomförs i samarbete med Sparbanken, Flen kommun, Hotell Malmköping, Kulturskolan, ABF och lokala aktörer.",
+      "heroMediaType": "image",
+      "coverImage": "/assets/jazz/Logo.jpg",
+      "practicalInfo": "Inträde:\nVuxna: 100 kr\nMinderåriga & Kulturskolans elever: Gratis\n\nKafé med hembakat finns på plats. Alkoholfritt.\nÅterkommande konserter på fredagar.",
+      "galleryImages": [
+        { "src": "/assets/jazz/Affisch 10 april.jpg", "caption": "Affisch 10 april" }
+      ],
+      "videos": [],
+      "childPages": []
+    },
+    {
+      "id": "3",
+      "slug": "malarateljen",
+      "title": "Målarateljen",
+      "shortDescription": "Kursverksamhet och målarateljé med Mikael Eriksson – en plats för färg, form och eget skapande.",
+      "fullDescription": "Målarateljén erbjuder en kreativ miljö för måleri, kurser och konstnärligt utforskande. Här kan deltagare utveckla sitt bildspråk, arbeta med färg och form och ta del av Mikael Erikssons erfarenhet som konstnär och handledare. Vi inspirerar till skaparglädje och möten genom konst.",
+      "heroMediaType": "image",
+      "coverImage": "/assets/malarateljen/130 x 200.jpeg",
+      "practicalInfo": "Kurser och öppettider uppdateras löpande. Välkommen till vår ateljé i Amazon.",
+      "galleryImages": [
+        { "src": "/assets/malarateljen/135x200.jpeg", "caption": "Tavla" },
+        { "src": "/assets/malarateljen/81x67.jpeg", "caption": "Tavla" },
+        { "src": "/assets/malarateljen/140x200.jpeg", "caption": "Tavla" }
+      ],
+      "videos": [
+        {
+          "title": "Målarateljen",
+          "url": "https://youtu.be/ZVrUFPsHRkE?si=-U9iLR30h_GKTaVH",
+          "pinned": true
+        }
+      ],
+      "childPages": []
+    },
+    {
+      "id": "4",
+      "slug": "textilverkstad",
+      "title": "Textilverkstad",
+      "shortDescription": "En kreativ verkstad för textilt hantverk, vävning, stickning och skapande med händerna.",
+      "fullDescription": "Textilverkstaden är en plats för textilt skapande där deltagare kan arbeta med vävning, mattor, stickning och andra hantverkstekniker. Här finns möjlighet att lära sig, prova på och utveckla egna textila projekt i en varm och praktisk miljö tillsammans med andra.",
+      "heroMediaType": "image",
+      "coverImage": "/assets/textilverkstad/klipper.JPG",
+      "practicalInfo": "Information om aktuella workshops, vävstolar och öppettider publiceras inom kort.",
+      "galleryImages": [
+        { "src": "/assets/textilverkstad/Gruppbild.JPG", "caption": "Deltagare" }
+      ],
+      "videos": [],
+      "childPages": []
+    }
+  ],
+  "news": [
+    {
+      "id": "news-1",
+      "title": "Jazz & World Music Club öppnar våren 2025",
+      "date": "2025-01-15",
+      "sectionId": "2",
+      "excerpt": "Vi förbereder för fullt inför premiären av vår nya klubbscen i Amazon.",
+      "body": "Till våren 2025 slår vi upp portarna för Jazz & World Music Club. Det blir återkommande fredagskonserter, hembakat fika och fantastisk musik till väldigt låga priser (och gratis för unga!). Håll utkik här för det fullständiga programmet.",
+      "image": "",
+      "status": "published"
+    }
+  ],
+  "events": []
+}
