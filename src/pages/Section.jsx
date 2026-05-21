@@ -78,8 +78,15 @@ export default function Section() {
       ? 'bilder'
       : mediaTab;
 
+  // Both the legacy split hero (.section-hero.has-video-bg) and the new
+  // HeroVideoSection fill the top of the viewport — in either case we want
+  // <main>'s padding-top removed and a controlled gap below the hero. Gate
+  // the modifier on either condition so the new HeroVideoSection branch
+  // gets the same hug-the-top treatment PR #6 set up for the legacy branch.
+  const heroFillsTop = useNewHero || isVideoHero;
+
   return (
-    <div className={`section-page animate-fade-in${isVideoHero ? ' section-page--has-hero-video' : ''}`}>
+    <div className={`section-page animate-fade-in${heroFillsTop ? ' section-page--has-hero-video' : ''}`}>
 
       {useNewHero ? (
         <HeroVideoSection

@@ -37,6 +37,36 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
     setReloadKey((k) => k + 1);
   }, [video?.videoId, video?.embedUrl]);
 
+  // Auto-unmute on first user gesture. Browsers silently mute autoplay until
+  // the user interacts with the page; the explicit speaker button works, but
+  // most visitors never notice it. Posting `unMute` on first pointerdown /
+  // keydown / scroll / touch lifts the silence the moment the visitor engages
+  // with the page. Mirrors the pattern PR #6 added to VideoEmbed.
+  useEffect(() => {
+    if (!video) return undefined;
+    const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    const unmute = () => {
+      const win = iframeRef.current?.contentWindow;
+      if (win) {
+        try {
+          win.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: '' }), '*');
+          win.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
+        } catch {
+          // postMessage to a cross-origin iframe should not throw, but be safe.
+        }
+      }
+      // Keep the speaker icon in sync with the actual audio state. The src
+      // recompute will reload the iframe once with mute=0 so the postMessage
+      // and the URL agree — brief, one-shot, and only after a real gesture.
+      setMuted(false);
+      events.forEach((ev) => document.removeEventListener(ev, unmute, true));
+    };
+    events.forEach((ev) =>
+      document.addEventListener(ev, unmute, { capture: true, passive: true })
+    );
+    return () => events.forEach((ev) => document.removeEventListener(ev, unmute, true));
+  }, [video?.videoId, video?.embedUrl]);
+
   if (!video) {
     // No usable video — fall back to a still image hero so the page never
     // breaks because the section has no pinned youtube media.
@@ -74,6 +104,8 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
 
   // The `playlist=<id>` param is required for `loop=1` to actually loop a
   // single video on YouTube — without it the iframe stops on first end.
+  // `enablejsapi=1` lets us postMessage `unMute` once the visitor has made a
+  // gesture (browsers require this for cross-origin iframe control).
   const muteParam = muted ? '1' : '0';
   const autoplayParam = playing ? '1' : '0';
   const src =
@@ -85,7 +117,8 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
     `&controls=0` +
     `&modestbranding=1` +
     `&rel=0` +
-    `&playsinline=1`;
+    `&playsinline=1` +
+    `&enablejsapi=1`;
 
   function toggleMute() {
     // We force-remount the iframe with the new param value. Posting to the
