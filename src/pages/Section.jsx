@@ -79,7 +79,7 @@ export default function Section() {
       : mediaTab;
 
   return (
-    <div className="section-page animate-fade-in">
+    <div className={`section-page animate-fade-in${isVideoHero ? ' section-page--has-hero-video' : ''}`}>
 
       {useNewHero ? (
         <HeroVideoSection
