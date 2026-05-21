@@ -4,6 +4,7 @@ import { contentRepository } from '../../lib/cms/contentRepository';
 export default function Global() {
   const [content, setContent] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const readOnly = contentRepository.isReadOnly();
 
@@ -47,9 +48,12 @@ export default function Global() {
 
   async function handleSave() {
     setError('');
+    setSaved(false);
     setSaving(true);
     try {
       await contentRepository.updateGlobalContent(content);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -67,6 +71,7 @@ export default function Global() {
       <div className="admin-card">
         <h3 style={{ marginBottom: 24 }}>Generella Inställningar & Texter</h3>
         {error && <div className="admin-login-error">{error}</div>}
+        {saved && <div className="admin-save-ok" role="status">Sparat ✓</div>}
 
         <div className="form-group">
           <label className="form-label">Sidans Titel</label>

@@ -188,6 +188,16 @@ textarea.form-control {
   margin-bottom: 16px;
 }
 
+.admin-save-ok {
+  background: #e6f4ea;
+  color: #137333;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
 /* Read-only dev banner */
 .admin-readonly-banner {
   background: #fff3cd;

@@ -18,6 +18,8 @@ export default function AdminChildPages() {
   const [childPages, setChildPages] = useState([]);
   const [editing, setEditing] = useState(null);
   const [isNew, setIsNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
   const readOnly = contentRepository.isReadOnly();
@@ -55,17 +57,22 @@ export default function AdminChildPages() {
 
   async function handleSave() {
     setError('');
+    if (!editing.sectionId || !editing.title || !editing.slug) {
+      setError('Sektion, titel och slug krävs.');
+      return;
+    }
+    setSaved(false);
+    setSaving(true);
     try {
-      if (!editing.sectionId || !editing.title || !editing.slug) {
-        setError('Sektion, titel och slug krävs.');
-        return;
-      }
       if (isNew) await contentRepository.createChildPage(editing);
       else       await contentRepository.updateChildPage(editing.id, editing);
-      setEditing(null);
+      setSaved(true);
       await load();
+      setTimeout(() => { setSaved(false); setEditing(null); }, 1200);
     } catch (e) {
       setError(e.message || String(e));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -86,6 +93,7 @@ export default function AdminChildPages() {
           <h3 style={{ marginBottom: 24 }}>{isNew ? 'Skapa undersida' : `Redigera: ${editing.title}`}</h3>
 
           {error && <div className="admin-login-error">{error}</div>}
+          {saved && <div className="admin-save-ok" role="status">Sparat ✓</div>}
 
           <div className="form-group">
             <label className="form-label">Sektion (förälder)</label>
@@ -137,8 +145,10 @@ export default function AdminChildPages() {
           )}
 
           <div className="btn-group">
-            <button className="btn-primary" onClick={handleSave} disabled={readOnly}>{readOnly ? 'Read-only (dev)' : 'Spara'}</button>
-            <button className="btn-secondary" onClick={() => setEditing(null)}>Avbryt</button>
+            <button className="btn-primary" onClick={handleSave} disabled={readOnly || saving}>
+              {readOnly ? 'Read-only (dev)' : (saving ? 'Sparar...' : 'Spara')}
+            </button>
+            <button className="btn-secondary" onClick={() => setEditing(null)} disabled={saving}>Avbryt</button>
           </div>
           {readOnly && <p style={{ marginTop: 12, color: '#856404', fontSize: '0.85rem' }}>Utvecklingsläge: ändringar går inte att spara.</p>}
         </div>
@@ -243,15 +253,18 @@ function MediaAssignmentSection({ parent, existing, onChange }) {
 
   return (
     <div style={{ marginTop: 32, padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #ddd' }}>
-      <h4 style={{ marginBottom: 12 }}>Tilldelad media</h4>
+      <h4 style={{ marginBottom: 4 }}>Tilldelad media <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>(sparas direkt)</span></h4>
+      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 12 }}>
+        Media sparas direkt när du klickar "Lägg till nu" eller "Ta bort nu". Knappen <strong>Avbryt</strong> nedan ångrar bara ändringar i textfälten — inte i media.
+      </p>
       {existing.length === 0 && <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Ingen media tilldelad ännu.</p>}
       {existing.map(m => (
         <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #eee' }}>
           <span style={{ flex: 1, fontSize: '0.9rem' }}>
-            {m.videoId ? 'Video' : 'Bild'}: {m.title || m.caption || m.url}
+            {m.videoId ? 'Video' : 'Bild'}: {m.title || m.caption || m.url || m.src}
             {m.pinned && <strong style={{ color: 'var(--color-orange)', marginLeft: 8 }}>(fäst)</strong>}
           </span>
-          <button className="btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => removeItem(m.id)} disabled={readOnly}>Ta bort</button>
+          <button className="btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => removeItem(m.id)} disabled={readOnly}>Ta bort nu</button>
         </div>
       ))}
 
@@ -278,7 +291,7 @@ function MediaAssignmentSection({ parent, existing, onChange }) {
         </div>
       )}
       <div style={{ marginTop: 12 }}>
-        <button className="btn-primary" onClick={addItem} disabled={readOnly || !newUrl}>Lägg till</button>
+        <button className="btn-primary" onClick={addItem} disabled={readOnly || !newUrl}>Lägg till nu</button>
       </div>
     </div>
   );

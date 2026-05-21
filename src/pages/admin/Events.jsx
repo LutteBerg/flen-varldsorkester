@@ -6,6 +6,8 @@ export default function Events() {
   const [sections, setSections] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
   const [isNew, setIsNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const readOnly = contentRepository.isReadOnly();
 
@@ -46,6 +48,8 @@ export default function Events() {
   }
   async function handleSave() {
     setError('');
+    setSaved(false);
+    setSaving(true);
     try {
       const payload = {
         title: editingItem.title,
@@ -59,9 +63,11 @@ export default function Events() {
       };
       if (isNew) await contentRepository.createEvent(payload);
       else       await contentRepository.updateEvent(editingItem.id, payload);
-      setEditingItem(null);
+      setSaved(true);
       await load();
+      setTimeout(() => { setSaved(false); setEditingItem(null); }, 1200);
     } catch (e) { setError(e.message || String(e)); }
+    finally { setSaving(false); }
   }
 
   if (editingItem) {
@@ -70,6 +76,7 @@ export default function Events() {
         <div className="admin-card">
           <h3 style={{ marginBottom: 24 }}>{isNew ? 'Skapa Evenemang' : 'Redigera Evenemang'}</h3>
           {error && <div className="admin-login-error">{error}</div>}
+          {saved && <div className="admin-save-ok" role="status">Sparat ✓</div>}
 
           <div className="form-group">
             <label className="form-label">Titel</label>
@@ -90,6 +97,17 @@ export default function Events() {
           <div className="form-group">
             <label className="form-label">Plats</label>
             <input type="text" className="form-control" value={editingItem.location} onChange={(e) => handleChange('location', e.target.value)} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Bild (URL eller sökväg, valfritt)</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="/assets/events/foo.jpg eller https://..."
+              value={editingItem.image || ''}
+              onChange={(e) => handleChange('image', e.target.value)}
+            />
           </div>
 
           <div className="form-group">
@@ -114,8 +132,10 @@ export default function Events() {
           </div>
 
           <div className="btn-group">
-            <button className="btn-primary" onClick={handleSave} disabled={readOnly}>{readOnly ? 'Read-only (dev)' : 'Spara'}</button>
-            <button className="btn-secondary" onClick={() => setEditingItem(null)}>Avbryt</button>
+            <button className="btn-primary" onClick={handleSave} disabled={readOnly || saving}>
+              {readOnly ? 'Read-only (dev)' : (saving ? 'Sparar...' : 'Spara')}
+            </button>
+            <button className="btn-secondary" onClick={() => setEditingItem(null)} disabled={saving}>Avbryt</button>
           </div>
         </div>
       </div>
