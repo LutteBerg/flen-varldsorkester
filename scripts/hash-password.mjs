@@ -10,13 +10,18 @@
 //   npx wrangler pages secret put ADMIN_PASSWORD_SALT
 //   npx wrangler pages secret put ADMIN_PASSWORD_ITERATIONS
 //
-// Algorithm: PBKDF2-HMAC-SHA256, 600 000 iterations, 16-byte salt, 32-byte key.
+// Algorithm: PBKDF2-HMAC-SHA256, 100 000 iterations, 16-byte salt, 32-byte key.
 // This matches what functions/lib/auth.js computes via Web Crypto on every login.
+//
+// 100 000 iterations is chosen to fit inside Cloudflare Workers' / Pages Functions'
+// per-request CPU budget. Higher values (e.g. 600 000) routinely exceed the
+// budget and cause every login to fail with an opaque 500 — see
+// functions/lib/auth.js MAX_PBKDF2_ITERATIONS.
 
 import { pbkdf2Sync, randomBytes } from 'node:crypto';
 import { createInterface } from 'node:readline';
 
-const ITERATIONS = 600000;
+const ITERATIONS = 100000;
 const SALT_BYTES = 16;
 const KEY_BYTES  = 32;
 

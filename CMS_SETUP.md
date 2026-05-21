@@ -69,8 +69,13 @@ You'll be prompted for a password (hidden input). The script prints:
 ```
 ADMIN_PASSWORD_HASH=...
 ADMIN_PASSWORD_SALT=...
-ADMIN_PASSWORD_ITERATIONS=600000
+ADMIN_PASSWORD_ITERATIONS=100000
 ```
+
+> **Iteration count matters.** The script uses 100 000 iterations to stay inside
+> Cloudflare Workers' per-request CPU budget. Higher values (e.g. 600 000) cause
+> every login attempt to fail with a 500 because the request runs out of CPU
+> time before PBKDF2 finishes. Don't bump this without testing.
 
 ### 1.5 Generate a session secret
 ```bash
@@ -208,3 +213,21 @@ Logs everyone out immediately. Use this if you suspect a session cookie leak.
 | `Set-Cookie` not sticking | Browser blocks `Secure` cookie on `http://localhost` | Use `wrangler pages dev` which serves over `http://localhost` — modern browsers accept Secure cookies on localhost as an exception. If still broken, deploy to a preview URL. |
 | Migration fails with `UNIQUE constraint failed` | You're re-running `0002_seed.sql` after manual edits | Expected — `INSERT OR IGNORE` skips conflicts. Not an error. |
 | Wrangler keeps switching to the wrong Cloudflare account | The active account is stored in `~/.wrangler/config/default.toml`. Run `npx wrangler logout`, then `npx wrangler login` and choose Lutte's account in the browser. For machines that switch between accounts often, lock the active session with `export CLOUDFLARE_ACCOUNT_ID=<lutte-account-id>` (or `$env:CLOUDFLARE_ACCOUNT_ID=...` in PowerShell) before running wrangler commands. |
+| Login returns 500 "Server configuration error: ADMIN_PASSWORD_ITERATIONS=600000 exceeds…" | The hash was generated with the old 600k default. Re-run `node scripts/hash-password.mjs` (now defaults to 100 000) and re-set the three `ADMIN_PASSWORD_*` secrets with the new values. |
+| Login returns 500 "Internal server error" with no detail | Check `npx wrangler pages deployment tail` while reproducing — the actual error name + message + stack is logged server-side (no secrets). Also hit `GET /api/health` to confirm the env vars are even visible to the Function. |
+
+## Diagnostic endpoint
+
+`GET /api/health` returns booleans (not values) for the four secrets and the
+D1 binding. Use it to confirm the runtime config after every secret rotation:
+
+```bash
+curl -s https://flen-varldsorkester.pages.dev/api/health
+# Expected:
+# {"ok":true,"hasDB":true,"hasAdminPasswordHash":true,
+#  "hasAdminPasswordSalt":true,"hasAdminPasswordIterations":true,
+#  "hasSessionSecret":true}
+```
+
+If any of those booleans is `false`, that's the secret to re-set via
+`npx wrangler pages secret put <NAME>`.

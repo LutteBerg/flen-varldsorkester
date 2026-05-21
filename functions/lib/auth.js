@@ -3,14 +3,28 @@
 // All secrets are read from the env at call time:
 //   ADMIN_PASSWORD_HASH        base64(32-byte PBKDF2-SHA256 derived key)
 //   ADMIN_PASSWORD_SALT        base64(16-byte salt)
-//   ADMIN_PASSWORD_ITERATIONS  decimal string, e.g. "600000"
+//   ADMIN_PASSWORD_ITERATIONS  decimal string, e.g. "100000"
 //   SESSION_SECRET             base64(32-byte HMAC-SHA256 key)
 //
-// If any are missing, the relevant helper throws a 500 Response.
-// Login never succeeds if the env is incomplete (fail closed).
+// PBKDF2 iteration ceiling: keep <= MAX_PBKDF2_ITERATIONS. Cloudflare
+// Workers/Pages Functions have a CPU budget per request (10ms on Free,
+// 50ms default on Paid). 600k iterations of PBKDF2-SHA256 routinely
+// exceeds this and throws "Script will never generate a response" /
+// the request is terminated. 100k iterations completes in ~5-20ms and
+// is the documented Cloudflare-friendly default.
+//
+// If any required env var is missing, the relevant helper throws a 500
+// Response. Login never succeeds if the env is incomplete (fail closed).
 
 export const SESSION_COOKIE_NAME = 'lb_admin_session';
 export const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60; // 7 days
+
+// Cloudflare Workers/Pages: PBKDF2 with > ~150k iterations risks exceeding the
+// per-request CPU budget. We reject values above this ceiling so a stale env
+// var configured with the old default (600k) fails LOUDLY with a clear error
+// rather than vanishing into a "500 Internal server error".
+export const MAX_PBKDF2_ITERATIONS = 150000;
+export const MIN_PBKDF2_ITERATIONS = 1000;
 
 // ── base64url helpers (URL-safe, no padding) ─────────────────────────────────
 
@@ -58,14 +72,38 @@ function constantTimeEqual(a, b) {
   return diff === 0;
 }
 
+export class PasswordConfigError extends Error {
+  constructor(reason) { super(reason); this.name = 'PasswordConfigError'; }
+}
+
 export async function verifyPassword(password, env) {
   envOrThrow(env);
   if (typeof password !== 'string' || !password) return false;
 
-  const salt = bufferFromBase64(env.ADMIN_PASSWORD_SALT);
+  let salt, expected;
+  try {
+    salt = bufferFromBase64(env.ADMIN_PASSWORD_SALT);
+    expected = bufferFromBase64(env.ADMIN_PASSWORD_HASH);
+  } catch (e) {
+    // atob() throws InvalidCharacterError on malformed base64
+    throw new PasswordConfigError('ADMIN_PASSWORD_SALT or ADMIN_PASSWORD_HASH is not valid base64.');
+  }
+  if (salt.byteLength === 0 || expected.byteLength === 0) {
+    throw new PasswordConfigError('ADMIN_PASSWORD_SALT or ADMIN_PASSWORD_HASH decoded to zero bytes.');
+  }
+
   const iterations = parseInt(env.ADMIN_PASSWORD_ITERATIONS, 10);
-  const expected = bufferFromBase64(env.ADMIN_PASSWORD_HASH);
-  if (!iterations || iterations < 1000) return false;
+  if (!iterations || iterations < MIN_PBKDF2_ITERATIONS) {
+    throw new PasswordConfigError(`ADMIN_PASSWORD_ITERATIONS must be >= ${MIN_PBKDF2_ITERATIONS}.`);
+  }
+  if (iterations > MAX_PBKDF2_ITERATIONS) {
+    // Cloudflare Workers will exceed its CPU budget before returning; we'd
+    // otherwise fail with an opaque "Internal server error".
+    throw new PasswordConfigError(
+      `ADMIN_PASSWORD_ITERATIONS=${iterations} exceeds the Cloudflare Workers ceiling of ${MAX_PBKDF2_ITERATIONS}. ` +
+      `Regenerate the hash with the current scripts/hash-password.mjs default and update the three ADMIN_PASSWORD_* secrets.`
+    );
+  }
 
   const key = await crypto.subtle.importKey(
     'raw',

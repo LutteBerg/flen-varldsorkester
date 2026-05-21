@@ -8,6 +8,7 @@ import {
   verifyPassword,
   createSessionToken,
   sessionCookieHeader,
+  PasswordConfigError,
 } from '../../lib/auth.js';
 
 export const onRequestPost = wrap(async ({ request, env }) => {
@@ -18,7 +19,31 @@ export const onRequestPost = wrap(async ({ request, env }) => {
     return error(400, 'Password required');
   }
 
-  const ok = await verifyPassword(password, env);
+  // Surface configuration errors as 500 with a specific (non-secret) reason
+  // rather than letting wrap() bury them as "Internal server error".
+  let ok;
+  try {
+    ok = await verifyPassword(password, env);
+  } catch (err) {
+    // Log structured context (no secret VALUES — only existence booleans + message)
+    console.error('admin/login: verifyPassword threw', {
+      hasHash:       Boolean(env.ADMIN_PASSWORD_HASH),
+      hasSalt:       Boolean(env.ADMIN_PASSWORD_SALT),
+      hasIterations: Boolean(env.ADMIN_PASSWORD_ITERATIONS),
+      hasSessionSecret: Boolean(env.SESSION_SECRET),
+      hasDB:         Boolean(env.DB),
+      iterations:    env.ADMIN_PASSWORD_ITERATIONS,  // OK to log: NOT a secret value
+      errorName:     err && err.name,
+      errorMessage:  err && err.message,
+      errorStack:    err && err.stack,
+    });
+    if (err instanceof PasswordConfigError) {
+      return error(500, 'Server configuration error', { reason: err.message });
+    }
+    // Re-throw so wrap() turns it into the generic 500
+    throw err;
+  }
+
   if (!ok) return error(401, 'Fel lösenord');
 
   const token = await createSessionToken(env);
