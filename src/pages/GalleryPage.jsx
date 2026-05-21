@@ -2,15 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
-import VideoEmbed from '../components/VideoEmbed';
+import { VideoThumbnail } from '../components/VideoEmbed';
+import VideoModal from '../components/VideoModal';
+import MediaTabs from '../components/MediaTabs';
+
+const VALID_TABS = new Set(['bilder', 'video']);
 
 export default function GalleryPage() {
   const { slug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [section, setSection] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeVideo, setActiveVideo] = useState(null);
 
-  const currentTab = searchParams.get('tab') || 'bilder';
+  const rawTab = searchParams.get('tab');
+  const currentTab = VALID_TABS.has(rawTab) ? rawTab : 'bilder';
 
   useEffect(() => {
     async function fetchData() {
@@ -22,17 +28,27 @@ export default function GalleryPage() {
     fetchData();
   }, [slug]);
 
+  function switchTab(next) {
+    if (next === currentTab) return;
+    setSearchParams({ tab: next }, { replace: true });
+  }
+
   if (loading) return <div className="container" style={{padding: '80px 32px'}}>Laddar...</div>;
   if (!section) return <div className="container" style={{padding: '80px 32px'}}>Sektionen hittades inte.</div>;
 
-  const hasBilder = section.galleryImages && section.galleryImages.length > 0;
-  const hasVideos = section.videos && section.videos.length > 0;
+  const sortedImages = [...(section.galleryImages || [])].sort(byPinnedThenOrder);
+  const sortedVideos = [...(section.videos || [])].sort(byPinnedThenOrder);
 
-  // Pinned first.
-  const videos = [...(section.videos || [])].sort((a, b) => {
-    if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-    return (a.sortOrder || 0) - (b.sortOrder || 0);
-  });
+  const hasImages = sortedImages.length > 0;
+  const hasVideos = sortedVideos.length > 0;
+
+  // If the current tab has no content but the other does, render the other
+  // automatically so we never show a stranded empty pane on /galleri.
+  const renderTab = (currentTab === 'bilder' && !hasImages && hasVideos)
+    ? 'video'
+    : (currentTab === 'video' && !hasVideos && hasImages)
+      ? 'bilder'
+      : currentTab;
 
   return (
     <div className="section-page animate-fade-in" style={{paddingTop: '80px', paddingBottom: '80px'}}>
@@ -43,38 +59,20 @@ export default function GalleryPage() {
         </Link>
         <h1 className="section-title" style={{marginBottom: '32px'}}>Galleri</h1>
 
-        <div style={{display: 'flex', gap: '16px', marginBottom: '48px', borderBottom: '1px solid #ddd'}}>
-          <button
-            onClick={() => setSearchParams({ tab: 'bilder' })}
-            style={{
-              background: 'none', border: 'none', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer',
-              borderBottom: currentTab === 'bilder' ? '3px solid var(--color-orange)' : '3px solid transparent',
-              fontWeight: currentTab === 'bilder' ? 'bold' : 'normal',
-              color: currentTab === 'bilder' ? 'var(--color-text-main)' : 'var(--color-text-muted)'
-            }}
-          >
-            Bilder
-          </button>
-          <button
-            onClick={() => setSearchParams({ tab: 'video' })}
-            style={{
-              background: 'none', border: 'none', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer',
-              borderBottom: currentTab === 'video' ? '3px solid var(--color-orange)' : '3px solid transparent',
-              fontWeight: currentTab === 'video' ? 'bold' : 'normal',
-              color: currentTab === 'video' ? 'var(--color-text-main)' : 'var(--color-text-muted)'
-            }}
-          >
-            Video
-          </button>
-        </div>
+        <MediaTabs
+          activeTab={renderTab}
+          onChange={switchTab}
+          hasImages={hasImages}
+          hasVideos={hasVideos}
+        />
 
-        {currentTab === 'bilder' && (
+        {renderTab === 'bilder' && (
           <div className="animate-fade-in">
-            {hasBilder ? (
+            {hasImages ? (
               <div className="gallery-grid">
-                {section.galleryImages.map((img) => (
+                {sortedImages.map((img) => (
                   <div key={img.id} className="gallery-item">
-                    <img src={img.src} alt={img.caption || "Galleri bild"} />
+                    <img src={img.src} alt={img.caption || "Galleri bild"} loading="lazy" />
                     {img.caption && <div className="gallery-caption">{img.caption}</div>}
                   </div>
                 ))}
@@ -85,15 +83,21 @@ export default function GalleryPage() {
           </div>
         )}
 
-        {currentTab === 'video' && (
+        {renderTab === 'video' && (
           <div className="animate-fade-in">
             {hasVideos ? (
               <div className="video-grid">
-                {videos.map((vid) => (
-                  <div key={vid.id} className="video-item">
-                    <VideoEmbed videoId={vid.videoId} url={vid.url} embedUrl={vid.embedUrl} title={vid.title} />
+                {sortedVideos.map((vid) => (
+                  <button
+                    type="button"
+                    key={vid.id}
+                    className="video-item video-card-button"
+                    onClick={() => setActiveVideo(vid)}
+                    aria-label={vid.title ? `Spela video: ${vid.title}` : 'Spela video'}
+                  >
+                    <VideoThumbnail videoId={vid.videoId} url={vid.url} />
                     {vid.title && <h4 className="video-caption">{vid.title}</h4>}
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -101,8 +105,21 @@ export default function GalleryPage() {
             )}
           </div>
         )}
-
       </div>
+
+      <VideoModal
+        isOpen={!!activeVideo}
+        onClose={() => setActiveVideo(null)}
+        videoId={activeVideo?.videoId}
+        embedUrl={activeVideo?.embedUrl}
+        url={activeVideo?.url}
+        title={activeVideo?.title}
+      />
     </div>
   );
+}
+
+function byPinnedThenOrder(a, b) {
+  if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+  return (a.sortOrder || 0) - (b.sortOrder || 0);
 }

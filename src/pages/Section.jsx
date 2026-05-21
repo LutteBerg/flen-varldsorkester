@@ -3,8 +3,19 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
-import VideoEmbed, { VideoThumbnail } from '../components/VideoEmbed';
+import VideoEmbed from '../components/VideoEmbed';
+import VideoModal from '../components/VideoModal';
+import MediaTabs from '../components/MediaTabs';
+import MediaPreviewGrid from '../components/MediaPreviewGrid';
+import HeroVideoSection from '../components/HeroVideoSection';
+import MusaikFeatureCard from '../components/MusaikFeatureCard';
 import './Section.css';
+
+// Slugs that should render the new HeroVideoSection at the top (with audio
+// controls and an explicit unmute affordance) instead of the legacy split
+// hero. We only wire this up for FVO in this pass; other sections still use
+// the standard hero. Add the slug here to opt a section in later.
+const HERO_VIDEO_SLUGS = new Set(['flen-varldsorkester']);
 
 export default function Section() {
   const { slug } = useParams();
@@ -13,6 +24,8 @@ export default function Section() {
   const [news, setNews] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mediaTab, setMediaTab] = useState('bilder');
+  const [activeVideo, setActiveVideo] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -40,51 +53,76 @@ export default function Section() {
   if (loading) return <div className="container" style={{padding: '80px 32px'}}>Laddar...</div>;
   if (!section) return <div className="container" style={{padding: '80px 32px'}}>Sektionen hittades inte.</div>;
 
-  // Pinned-first ordering already enforced by the API; videos[0] is the leader.
+  // The API already sorts media by pinned DESC, sort_order ASC, created_at DESC,
+  // but resort defensively so we still get sane ordering when seedAdapter is in use.
   const sortedVideos = [...(section.videos || [])].sort(byPinnedThenOrder);
+  const sortedImages = [...(section.galleryImages || [])].sort(byPinnedThenOrder);
   const pinnedVideo = sortedVideos.find(v => v.pinned);
   const isVideoHero = section.heroMediaType === 'video' && pinnedVideo;
 
+  // Hero-video opt-in: pinned YouTube first, otherwise the first video by
+  // sort order, otherwise null → image fallback inside HeroVideoSection.
+  const useNewHero = HERO_VIDEO_SLUGS.has(slug);
+  const heroVideo = useNewHero ? (pinnedVideo || sortedVideos[0] || null) : null;
+
   const previewEvents = events.slice(0, 3);
   const previewNews = news.slice(0, 2);
-  const previewGallery = (section.galleryImages || []).slice(0, 3);
-  const previewVideos = sortedVideos.filter(v => !v.pinned).slice(0, 2);
+
+  const hasImages = sortedImages.length > 0;
+  const hasVideos = sortedVideos.length > 0;
+  // If the chosen tab has no items, fall back to the other tab so we never
+  // render a stranded empty pane.
+  const effectiveTab = (mediaTab === 'bilder' && !hasImages && hasVideos)
+    ? 'video'
+    : (mediaTab === 'video' && !hasVideos && hasImages)
+      ? 'bilder'
+      : mediaTab;
 
   return (
     <div className="section-page animate-fade-in">
 
-      {/* Top Split Hero */}
-      <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>
-        {isVideoHero && (
-          <VideoEmbed
-            videoId={pinnedVideo.videoId}
-            url={pinnedVideo.url}
-            embedUrl={pinnedVideo.embedUrl}
-            mode="background"
-            title="Bakgrundsvideo"
-          />
-        )}
-
-        <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="hero-text-side">
-            <Link to="/" className="back-link">
-              <ArrowLeft size={20} />
-              <span className="text-uppercase">Hem</span>
-            </Link>
-            <h1 className="section-title">{section.title}</h1>
-            <p className="section-lead">{section.shortDescription}</p>
-          </div>
-          {!isVideoHero && (
-            <div className="hero-visual-side">
-              {section.coverImage ? (
-                <img src={section.coverImage} alt={section.title} className="img-documentary" />
-              ) : (
-                <div className="accent-block"></div>
-              )}
-            </div>
+      {useNewHero ? (
+        <HeroVideoSection
+          video={heroVideo}
+          title={section.title}
+          lead={section.shortDescription}
+          backTo={{ to: '/', label: 'Hem' }}
+          fallbackImage={section.coverImage}
+        />
+      ) : (
+        /* Top Split Hero (legacy) */
+        <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>
+          {isVideoHero && (
+            <VideoEmbed
+              videoId={pinnedVideo.videoId}
+              url={pinnedVideo.url}
+              embedUrl={pinnedVideo.embedUrl}
+              mode="background"
+              title="Bakgrundsvideo"
+            />
           )}
-        </div>
-      </section>
+
+          <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
+            <div className="hero-text-side">
+              <Link to="/" className="back-link">
+                <ArrowLeft size={20} />
+                <span className="text-uppercase">Hem</span>
+              </Link>
+              <h1 className="section-title">{section.title}</h1>
+              <p className="section-lead">{section.shortDescription}</p>
+            </div>
+            {!isVideoHero && (
+              <div className="hero-visual-side">
+                {section.coverImage ? (
+                  <img src={section.coverImage} alt={section.title} className="img-documentary" />
+                ) : (
+                  <div className="accent-block"></div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Content Area */}
       <section className="section-content-grid container">
@@ -94,14 +132,18 @@ export default function Section() {
             <p>{section.fullDescription}</p>
           </div>
 
-          {/* Child Pages Preview */}
-          {section.childPages && section.childPages.map(child => (
-            <div key={child.slug} className="musaik-section">
-              <h2 className="block-title" style={{fontSize: '1.75rem'}}>{child.title}</h2>
-              <p className="prose" style={{marginBottom: '24px', fontSize: '1.1rem'}}>{child.shortDescription}</p>
-              <Link to={`/${slug}/${child.slug}`} className="btn-secondary">Läs mer om {child.title}</Link>
-            </div>
-          ))}
+          {/* Child Pages Preview — Musaik (when present under FVO) is rendered
+              below the main grid as a visually distinct featured card; other
+              children stay as inline blocks here. */}
+          {section.childPages && section.childPages
+            .filter(child => !(useNewHero && child.slug === 'musaik-projektet'))
+            .map(child => (
+              <div key={child.slug} className="musaik-section">
+                <h2 className="block-title" style={{fontSize: '1.75rem'}}>{child.title}</h2>
+                <p className="prose" style={{marginBottom: '24px', fontSize: '1.1rem'}}>{child.shortDescription}</p>
+                <Link to={`/${slug}/${child.slug}`} className="btn-secondary">Läs mer om {child.title}</Link>
+              </div>
+            ))}
 
           {/* News Preview */}
           <div className="news-section">
@@ -172,29 +214,78 @@ export default function Section() {
         </aside>
       </section>
 
-      {/* Full-width Media Preview */}
-      {(previewGallery.length > 0 || previewVideos.length > 0) && (
+      {/* Featured child-project block — Musaik on /flen-varldsorkester */}
+      {useNewHero && (() => {
+        const musaik = (section.childPages || []).find(c => c.slug === 'musaik-projektet');
+        if (!musaik) return null;
+        return (
+          <MusaikFeatureCard
+            logoSrc="/assets/musaik/logo.png"
+            logoAlt="Musaik logotyp"
+            title={musaik.title || 'Musaik Projektet'}
+            description={musaik.shortDescription || 'Ett projekt inom Flen Världsorkester med fokus på skapande, gemenskap och musikaliska uttryck.'}
+            ctaLabel={`Läs mer om ${musaik.title || 'Musaik'}`}
+            ctaTo={`/${slug}/${musaik.slug}`}
+          />
+        );
+      })()}
+
+      {/* Section media preview — Bilder / Video tabs with 3 + 3 + "Visa fler" */}
+      {(hasImages || hasVideos) && (
         <section className="container">
           <div className="media-section">
-            <h2 className="block-title">Galleri & Video</h2>
-            <div className="gallery-grid">
-              {previewVideos.map((vid) => (
-                <Link to={`/${slug}/galleri?tab=video`} key={`v-${vid.id}`} className="gallery-item video-item">
-                  <VideoThumbnail videoId={vid.videoId} url={vid.url} />
-                </Link>
-              ))}
-              {previewGallery.map((img) => (
-                <Link to={`/${slug}/galleri?tab=bilder`} key={`i-${img.id}`} className="gallery-item">
-                  <img src={img.src} alt={img.caption || "Galleri bild"} />
-                </Link>
-              ))}
+            <div className="media-section-head">
+              <h2 className="block-title" style={{ marginBottom: 0 }}>Galleri</h2>
+              <MediaTabs
+                activeTab={effectiveTab}
+                onChange={setMediaTab}
+                hasImages={hasImages}
+                hasVideos={hasVideos}
+              />
             </div>
-            <div style={{marginTop: '32px', textAlign: 'center'}}>
-              <Link to={`/${slug}/galleri`} className="btn-secondary">Se hela galleriet</Link>
-            </div>
+
+            {effectiveTab === 'bilder' && (
+              <>
+                <MediaPreviewGrid items={sortedImages} type="bilder" maxItems={3} />
+                {sortedImages.length > 0 && (
+                  <div style={{ marginTop: '32px', textAlign: 'center' }}>
+                    <Link to={`/${slug}/galleri?tab=bilder`} className="btn-secondary">
+                      Visa fler bilder
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
+
+            {effectiveTab === 'video' && (
+              <>
+                <MediaPreviewGrid
+                  items={sortedVideos}
+                  type="video"
+                  maxItems={3}
+                  onVideoClick={setActiveVideo}
+                />
+                {sortedVideos.length > 0 && (
+                  <div style={{ marginTop: '32px', textAlign: 'center' }}>
+                    <Link to={`/${slug}/galleri?tab=video`} className="btn-secondary">
+                      Visa fler videor
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </section>
       )}
+
+      <VideoModal
+        isOpen={!!activeVideo}
+        onClose={() => setActiveVideo(null)}
+        videoId={activeVideo?.videoId}
+        embedUrl={activeVideo?.embedUrl}
+        url={activeVideo?.url}
+        title={activeVideo?.title}
+      />
 
       <div style={{ marginLeft: '-24px', marginRight: '-24px', marginTop: '40px' }}>
         <SocialCTA globalContent={globalContent} />
