@@ -253,15 +253,18 @@ function MediaAssignmentSection({ parent, existing, onChange }) {
 
   return (
     <div style={{ marginTop: 32, padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #ddd' }}>
-      <h4 style={{ marginBottom: 12 }}>Tilldelad media</h4>
+      <h4 style={{ marginBottom: 4 }}>Tilldelad media <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>(sparas direkt)</span></h4>
+      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 12 }}>
+        Media sparas direkt när du klickar "Lägg till nu" eller "Ta bort nu". Knappen <strong>Avbryt</strong> nedan ångrar bara ändringar i textfälten — inte i media.
+      </p>
       {existing.length === 0 && <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Ingen media tilldelad ännu.</p>}
       {existing.map(m => (
         <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #eee' }}>
           <span style={{ flex: 1, fontSize: '0.9rem' }}>
-            {m.videoId ? 'Video' : 'Bild'}: {m.title || m.caption || m.url}
+            {m.videoId ? 'Video' : 'Bild'}: {m.title || m.caption || m.url || m.src}
             {m.pinned && <strong style={{ color: 'var(--color-orange)', marginLeft: 8 }}>(fäst)</strong>}
           </span>
-          <button className="btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => removeItem(m.id)} disabled={readOnly}>Ta bort</button>
+          <button className="btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => removeItem(m.id)} disabled={readOnly}>Ta bort nu</button>
         </div>
       ))}
 
@@ -288,7 +291,7 @@ function MediaAssignmentSection({ parent, existing, onChange }) {
         </div>
       )}
       <div style={{ marginTop: 12 }}>
-        <button className="btn-primary" onClick={addItem} disabled={readOnly || !newUrl}>Lägg till</button>
+        <button className="btn-primary" onClick={addItem} disabled={readOnly || !newUrl}>Lägg till nu</button>
       </div>
     </div>
   );

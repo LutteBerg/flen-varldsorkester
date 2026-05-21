@@ -100,6 +100,17 @@ export default function Events() {
           </div>
 
           <div className="form-group">
+            <label className="form-label">Bild (URL eller sökväg, valfritt)</label>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="/assets/events/foo.jpg eller https://..."
+              value={editingItem.image || ''}
+              onChange={(e) => handleChange('image', e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
             <label className="form-label">Relaterad Sektion (frivilligt)</label>
             <select className="form-control" value={editingItem.sectionId || ''} onChange={(e) => handleChange('sectionId', e.target.value)}>
               <option value="">Ingen specifik sektion</option>

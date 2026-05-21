@@ -99,6 +99,17 @@ export default function Sections() {
             <textarea className="form-control" value={editing.practicalInfo || ''} onChange={(e) => handleChange('practicalInfo', e.target.value)} />
           </div>
 
+          <div className="form-group">
+            <label className="form-label">Status</label>
+            <select className="form-control" value={editing.status || 'published'} onChange={(e) => handleChange('status', e.target.value)}>
+              <option value="published">Publicerad</option>
+              <option value="draft">Utkast</option>
+            </select>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+              Utkast döljer sektionen från den publika webbplatsen men behåller den i admin.
+            </p>
+          </div>
+
           <MediaAssignmentSection
             parent={{ sectionId: editing.id }}
             existing={existingMedia}
