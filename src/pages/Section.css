@@ -36,6 +36,15 @@
   margin-bottom: clamp(1.5rem, 4vw, 3rem);
 }
 
+/* Light variant — for child pages (e.g. Musaik Projektet) that sit on a
+   white surround. The video + dark overlay keeps title readability; the
+   wrapper just drops the off-white tint and divider so the hero meets
+   the white page cleanly. */
+.section-hero.has-video-bg.is-light {
+  background-color: #ffffff;
+  border-bottom: none;
+}
+
 .video-hero-wrapper {
   position: absolute;
   top: 0;

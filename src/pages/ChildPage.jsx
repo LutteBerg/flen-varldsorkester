@@ -40,25 +40,43 @@ export default function ChildPage() {
   });
   const leadVideo = videos[0];
 
-  return (
-    <div className="section-page animate-fade-in" style={{paddingTop: '80px', paddingBottom: '80px'}}>
-      <div className="container">
-        <Link to={`/${slug}`} className="back-link">
-          <ArrowLeft size={20} />
-          <span className="text-uppercase">Tillbaka till {section.title}</span>
-        </Link>
-        <h1 className="section-title" style={{marginBottom: '32px'}}>{childPage.title}</h1>
-        <p className="section-lead" style={{marginBottom: '48px'}}>{childPage.shortDescription}</p>
+  const isVideoHero = !!leadVideo;
 
-        {leadVideo && (
-          <div className="featured-media-block" style={{marginBottom: '60px'}}>
-            <VideoEmbed
-              videoId={leadVideo.videoId}
-              url={leadVideo.url}
-              embedUrl={leadVideo.embedUrl}
-              title={leadVideo.title || childPage.title}
-            />
+  return (
+    <div className={`section-page animate-fade-in${isVideoHero ? ' section-page--has-hero-video' : ''}`}>
+
+      {isVideoHero && (
+        <section className="section-hero has-video-bg is-light">
+          <VideoEmbed
+            videoId={leadVideo.videoId}
+            url={leadVideo.url}
+            embedUrl={leadVideo.embedUrl}
+            mode="background"
+            title={leadVideo.title || childPage.title}
+          />
+          <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
+            <div className="hero-text-side">
+              <Link to={`/${slug}`} className="back-link">
+                <ArrowLeft size={20} />
+                <span className="text-uppercase">Tillbaka till {section.title}</span>
+              </Link>
+              <h1 className="section-title">{childPage.title}</h1>
+              <p className="section-lead">{childPage.shortDescription}</p>
+            </div>
           </div>
+        </section>
+      )}
+
+      <div className="container" style={{paddingTop: isVideoHero ? '0' : '80px', paddingBottom: '80px'}}>
+        {!isVideoHero && (
+          <>
+            <Link to={`/${slug}`} className="back-link">
+              <ArrowLeft size={20} />
+              <span className="text-uppercase">Tillbaka till {section.title}</span>
+            </Link>
+            <h1 className="section-title" style={{marginBottom: '32px'}}>{childPage.title}</h1>
+            <p className="section-lead" style={{marginBottom: '48px'}}>{childPage.shortDescription}</p>
+          </>
         )}
 
         <div className="prose">
