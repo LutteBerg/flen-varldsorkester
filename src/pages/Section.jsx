@@ -51,7 +51,7 @@ export default function Section() {
   const previewVideos = sortedVideos.filter(v => !v.pinned).slice(0, 2);
 
   return (
-    <div className="section-page animate-fade-in">
+    <div className={`section-page animate-fade-in${isVideoHero ? ' section-page--has-hero-video' : ''}`}>
 
       {/* Top Split Hero */}
       <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>

@@ -23,6 +23,19 @@
   color: var(--color-orange);
 }
 
+/* Full-bleed hero-video pages (e.g. Flen Världsorkester):
+   hug the top of <main>, drop the hero's own vertical padding,
+   and give the body content explicit breathing room below. */
+.main-content:has(.section-page--has-hero-video) {
+  padding-top: 0;
+}
+
+.section-page--has-hero-video .section-hero.has-video-bg {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-bottom: clamp(1.5rem, 4vw, 3rem);
+}
+
 .video-hero-wrapper {
   position: absolute;
   top: 0;
