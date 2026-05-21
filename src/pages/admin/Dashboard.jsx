@@ -1,78 +1,75 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contentRepository } from '../../lib/cms/contentRepository';
-import { Settings, Image, FileText, Calendar } from 'lucide-react';
+import { Settings, Image, FileText, Calendar, Layers } from 'lucide-react';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ sections: 0, news: 0, events: 0 });
+  const [stats, setStats] = useState({ sections: 0, childPages: 0, news: 0, events: 0 });
+  const readOnly = contentRepository.isReadOnly();
 
   useEffect(() => {
-    async function loadStats() {
-      const sections = await contentRepository.getSections();
-      const news = await contentRepository.getNews();
-      const events = await contentRepository.getEvents();
-      
-      setStats({
-        sections: sections.length,
-        news: news.length,
-        events: events.length
-      });
-    }
-    loadStats();
-  }, []);
+    (async () => {
+      try {
+        const snapshot = readOnly
+          ? await contentRepository.getContent()
+          : await contentRepository.getAdminContent();
+        const childPages = (snapshot.sections || []).reduce((acc, s) => acc + ((s.childPages || []).length), 0);
+        setStats({
+          sections: (snapshot.sections || []).length,
+          childPages,
+          news: (snapshot.news || []).length,
+          events: (snapshot.events || []).length,
+        });
+      } catch {
+        // session may have just expired; AdminLayout will redirect on next render
+      }
+    })();
+  }, [readOnly]);
 
   return (
     <div className="animate-fade-in">
-      <h3 style={{ marginBottom: '24px' }}>Välkommen till Admin-panelen</h3>
-      
-      <div className="admin-grid" style={{ marginBottom: '40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+      <h3 style={{ marginBottom: 24 }}>Välkommen till Admin-panelen</h3>
+
+      <div className="admin-grid" style={{ marginBottom: 40, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
         <Link to="/admin/global" className="admin-card hoverable">
-          <Settings size={32} style={{ marginBottom: '16px', color: '#E66A2C' }} />
+          <Settings size={32} style={{ marginBottom: 16, color: '#E66A2C' }} />
           <h3>Globala Texter</h3>
-          <p style={{ color: '#666', marginTop: '8px' }}>Ändra sajtens titel, kontaktuppgifter och sociala länkar.</p>
+          <p style={{ color: '#666', marginTop: 8 }}>Ändra sajtens titel, kontaktuppgifter och sociala länkar.</p>
         </Link>
         <Link to="/admin/sections" className="admin-card hoverable">
-          <Image size={32} style={{ marginBottom: '16px', color: '#E66A2C' }} />
-          <h3>Sektioner</h3>
-          <p style={{ color: '#666', marginTop: '8px' }}>Redigera innehåll för de 4 huvudkategorierna, gallerier och videor.</p>
+          <Image size={32} style={{ marginBottom: 16, color: '#E66A2C' }} />
+          <h3>Sektioner ({stats.sections})</h3>
+          <p style={{ color: '#666', marginTop: 8 }}>Redigera innehåll för de 4 huvudkategorierna, gallerier och videor.</p>
+        </Link>
+        <Link to="/admin/child-pages" className="admin-card hoverable">
+          <Layers size={32} style={{ marginBottom: 16, color: '#E66A2C' }} />
+          <h3>Undersidor ({stats.childPages})</h3>
+          <p style={{ color: '#666', marginTop: 8 }}>Skapa och redigera undersidor (t.ex. Musaik).</p>
         </Link>
         <Link to="/admin/news" className="admin-card hoverable">
-          <FileText size={32} style={{ marginBottom: '16px', color: '#E66A2C' }} />
-          <h3>Nyheter</h3>
-          <p style={{ color: '#666', marginTop: '8px' }}>Hantera nyhetsinlägg för hemsidan.</p>
+          <FileText size={32} style={{ marginBottom: 16, color: '#E66A2C' }} />
+          <h3>Nyheter ({stats.news})</h3>
+          <p style={{ color: '#666', marginTop: 8 }}>Hantera nyhetsinlägg för hemsidan.</p>
         </Link>
         <Link to="/admin/events" className="admin-card hoverable">
-          <Calendar size={32} style={{ marginBottom: '16px', color: '#E66A2C' }} />
-          <h3>Evenemang</h3>
-          <p style={{ color: '#666', marginTop: '8px' }}>Lägg till och redigera kommande evenemang.</p>
+          <Calendar size={32} style={{ marginBottom: 16, color: '#E66A2C' }} />
+          <h3>Evenemang ({stats.events})</h3>
+          <p style={{ color: '#666', marginTop: 8 }}>Lägg till och redigera kommande evenemang.</p>
         </Link>
       </div>
 
-      <div className="admin-card" style={{ maxWidth: '600px', borderLeft: '4px solid #E66A2C' }}>
-        <h3 style={{ marginBottom: '16px' }}>Databas (Prototype)</h3>
-        <p style={{ color: '#666', marginBottom: '24px' }}>
-          Eftersom sidan för närvarande använder webbläsarens lokala lagring (localStorage), kan du återställa allt innehåll till standardvärdena från källfilen (seedContent.json). Detta är användbart om du vill ladda om nya texter eller bilder från en uppdatering.
-        </p>
-        <button 
-          className="btn-secondary" 
-          onClick={async () => {
-            if (window.confirm('Är du säker på att du vill skriva över alla dina lokala ändringar med standardinnehållet?')) {
-              await contentRepository.resetToSeed();
-              window.location.reload();
-            }
-          }}
-        >
-          Återställ från seedContent
-        </button>
-      </div>
-
-      <div className="admin-card" style={{ marginTop: '24px' }}>
+      <div className="admin-card" style={{ marginTop: 24 }}>
         <h4>Snabbhjälp</h4>
-        <p style={{ marginTop: '12px', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-          Använd menyn till vänster för att redigera innehåll. 
-          Observera: Ändringar sparas för närvarande lokalt i din webbläsare (localStorage).
-          I framtiden kommer detta att kopplas till en riktig databas.
+        <p style={{ marginTop: 12, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+          Använd menyn till vänster för att redigera innehåll. Ändringar publiceras direkt på hemsidan
+          när du sparar (om status är "Publicerad"). Utkast syns endast i admin.
         </p>
+        {readOnly && (
+          <p style={{ marginTop: 12, color: '#856404' }}>
+            <strong>Utvecklingsläge:</strong> ändringar går inte att spara här —
+            kör <code>npm run build &amp;&amp; npx wrangler pages dev dist</code> för att testa hela flödet lokalt.
+          </p>
+        )}
       </div>
     </div>
   );

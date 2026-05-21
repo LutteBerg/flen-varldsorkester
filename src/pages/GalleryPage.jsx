@@ -2,34 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
-
-function YouTubeEmbed({ url }) {
-  if (!url) return null;
-  let videoId = '';
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1].split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1].split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1].split('?')[0];
-  }
-  
-  if (!videoId) return null;
-  
-  return (
-    <div className="video-wrapper">
-      <iframe 
-        width="100%" 
-        height="100%" 
-        src={`https://www.youtube.com/embed/${videoId}?rel=0`} 
-        title="YouTube video player" 
-        frameBorder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowFullScreen
-      ></iframe>
-    </div>
-  );
-}
+import VideoEmbed from '../components/VideoEmbed';
 
 export default function GalleryPage() {
   const { slug } = useParams();
@@ -55,6 +28,12 @@ export default function GalleryPage() {
   const hasBilder = section.galleryImages && section.galleryImages.length > 0;
   const hasVideos = section.videos && section.videos.length > 0;
 
+  // Pinned first.
+  const videos = [...(section.videos || [])].sort((a, b) => {
+    if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+    return (a.sortOrder || 0) - (b.sortOrder || 0);
+  });
+
   return (
     <div className="section-page animate-fade-in" style={{paddingTop: '80px', paddingBottom: '80px'}}>
       <div className="container">
@@ -65,7 +44,7 @@ export default function GalleryPage() {
         <h1 className="section-title" style={{marginBottom: '32px'}}>Galleri</h1>
 
         <div style={{display: 'flex', gap: '16px', marginBottom: '48px', borderBottom: '1px solid #ddd'}}>
-          <button 
+          <button
             onClick={() => setSearchParams({ tab: 'bilder' })}
             style={{
               background: 'none', border: 'none', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer',
@@ -76,7 +55,7 @@ export default function GalleryPage() {
           >
             Bilder
           </button>
-          <button 
+          <button
             onClick={() => setSearchParams({ tab: 'video' })}
             style={{
               background: 'none', border: 'none', padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer',
@@ -93,8 +72,8 @@ export default function GalleryPage() {
           <div className="animate-fade-in">
             {hasBilder ? (
               <div className="gallery-grid">
-                {section.galleryImages.map((img, idx) => (
-                  <div key={idx} className="gallery-item">
+                {section.galleryImages.map((img) => (
+                  <div key={img.id} className="gallery-item">
                     <img src={img.src} alt={img.caption || "Galleri bild"} />
                     {img.caption && <div className="gallery-caption">{img.caption}</div>}
                   </div>
@@ -110,9 +89,9 @@ export default function GalleryPage() {
           <div className="animate-fade-in">
             {hasVideos ? (
               <div className="video-grid">
-                {section.videos.map((vid, idx) => (
-                  <div key={idx} className="video-item">
-                    <YouTubeEmbed url={vid.url} />
+                {videos.map((vid) => (
+                  <div key={vid.id} className="video-item">
+                    <VideoEmbed videoId={vid.videoId} url={vid.url} embedUrl={vid.embedUrl} title={vid.title} />
                     {vid.title && <h4 className="video-caption">{vid.title}</h4>}
                   </div>
                 ))}

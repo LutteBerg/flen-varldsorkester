@@ -12,8 +12,10 @@ import ChildPage from './pages/ChildPage'
 
 // Admin
 import AdminLayout from './pages/admin/AdminLayout'
+import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminSections from './pages/admin/Sections'
+import AdminChildPages from './pages/admin/ChildPages'
 import AdminNews from './pages/admin/News'
 import AdminEvents from './pages/admin/Events'
 import AdminGlobal from './pages/admin/Global'
@@ -27,24 +29,24 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          
-          {/* Specific section sub-routes must come before the generic :childSlug */}
+
           <Route path="/:slug/evenemang" element={<EventList />} />
           <Route path="/:slug/nyheter" element={<NewsList />} />
           <Route path="/:slug/galleri" element={<GalleryPage />} />
-          
-          {/* Child pages (e.g. /flen-varldsorkester/musaik-projektet) */}
+
           <Route path="/:slug/:childSlug" element={<ChildPage />} />
-          
-          {/* Section overview page */}
           <Route path="/:slug" element={<Section />} />
         </Route>
 
-        {/* Admin Routes */}
+        {/* Admin login (no layout wrapper — own full-screen shell) */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin Routes (auth gate lives inside AdminLayout) */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="global" element={<AdminGlobal />} />
           <Route path="sections" element={<AdminSections />} />
+          <Route path="child-pages" element={<AdminChildPages />} />
           <Route path="news" element={<AdminNews />} />
           <Route path="events" element={<AdminEvents />} />
         </Route>
