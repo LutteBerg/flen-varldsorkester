@@ -18,6 +18,8 @@ export default function AdminChildPages() {
   const [childPages, setChildPages] = useState([]);
   const [editing, setEditing] = useState(null);
   const [isNew, setIsNew] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
   const readOnly = contentRepository.isReadOnly();
@@ -55,17 +57,22 @@ export default function AdminChildPages() {
 
   async function handleSave() {
     setError('');
+    if (!editing.sectionId || !editing.title || !editing.slug) {
+      setError('Sektion, titel och slug krävs.');
+      return;
+    }
+    setSaved(false);
+    setSaving(true);
     try {
-      if (!editing.sectionId || !editing.title || !editing.slug) {
-        setError('Sektion, titel och slug krävs.');
-        return;
-      }
       if (isNew) await contentRepository.createChildPage(editing);
       else       await contentRepository.updateChildPage(editing.id, editing);
-      setEditing(null);
+      setSaved(true);
       await load();
+      setTimeout(() => { setSaved(false); setEditing(null); }, 1200);
     } catch (e) {
       setError(e.message || String(e));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -86,6 +93,7 @@ export default function AdminChildPages() {
           <h3 style={{ marginBottom: 24 }}>{isNew ? 'Skapa undersida' : `Redigera: ${editing.title}`}</h3>
 
           {error && <div className="admin-login-error">{error}</div>}
+          {saved && <div className="admin-save-ok" role="status">Sparat ✓</div>}
 
           <div className="form-group">
             <label className="form-label">Sektion (förälder)</label>
@@ -137,8 +145,10 @@ export default function AdminChildPages() {
           )}
 
           <div className="btn-group">
-            <button className="btn-primary" onClick={handleSave} disabled={readOnly}>{readOnly ? 'Read-only (dev)' : 'Spara'}</button>
-            <button className="btn-secondary" onClick={() => setEditing(null)}>Avbryt</button>
+            <button className="btn-primary" onClick={handleSave} disabled={readOnly || saving}>
+              {readOnly ? 'Read-only (dev)' : (saving ? 'Sparar...' : 'Spara')}
+            </button>
+            <button className="btn-secondary" onClick={() => setEditing(null)} disabled={saving}>Avbryt</button>
           </div>
           {readOnly && <p style={{ marginTop: 12, color: '#856404', fontSize: '0.85rem' }}>Utvecklingsläge: ändringar går inte att spara.</p>}
         </div>

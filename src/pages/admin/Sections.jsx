@@ -5,6 +5,8 @@ import { MediaAssignmentSection } from './ChildPages';
 export default function Sections() {
   const [sections, setSections] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const readOnly = contentRepository.isReadOnly();
 
@@ -32,6 +34,8 @@ export default function Sections() {
 
   async function handleSave() {
     setError('');
+    setSaved(false);
+    setSaving(true);
     try {
       await contentRepository.updateSection(editing.id, {
         title: editing.title,
@@ -42,10 +46,13 @@ export default function Sections() {
         practicalInfo: editing.practicalInfo,
         status: editing.status || 'published',
       });
-      setEditing(null);
+      setSaved(true);
       await load();
+      setTimeout(() => { setSaved(false); setEditing(null); }, 1200);
     } catch (e) {
       setError(e.message || String(e));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -56,6 +63,7 @@ export default function Sections() {
         <div className="admin-card">
           <h3 style={{ marginBottom: 24 }}>Redigera Sektion: {editing.title}</h3>
           {error && <div className="admin-login-error">{error}</div>}
+          {saved && <div className="admin-save-ok" role="status">Sparat ✓</div>}
 
           <div className="form-group">
             <label className="form-label">Titel</label>
@@ -102,8 +110,10 @@ export default function Sections() {
           />
 
           <div className="btn-group" style={{marginTop: 32}}>
-            <button className="btn-primary" onClick={handleSave} disabled={readOnly}>{readOnly ? 'Read-only (dev)' : 'Spara'}</button>
-            <button className="btn-secondary" onClick={() => setEditing(null)}>Avbryt</button>
+            <button className="btn-primary" onClick={handleSave} disabled={readOnly || saving}>
+              {readOnly ? 'Read-only (dev)' : (saving ? 'Sparar...' : 'Spara')}
+            </button>
+            <button className="btn-secondary" onClick={() => setEditing(null)} disabled={saving}>Avbryt</button>
           </div>
         </div>
       </div>
