@@ -4,10 +4,15 @@
 }
 
 .hero-title {
-  font-size: 3rem;
+  /* Site name "Kulturföreningen Flen Världsorkester" is long;
+     keep this ~20% smaller than the original 3rem/4.5rem so it fits
+     on narrow phones without horizontal scrolling, and scales
+     fluidly on desktops with clamp(). */
+  font-size: 2.4rem;
   margin-bottom: 24px;
   letter-spacing: -0.04em;
   font-weight: 800;
+  overflow-wrap: break-word;
 }
 
 .hero-intro {
@@ -20,7 +25,7 @@
 
 @media (min-width: 768px) {
   .hero-title {
-    font-size: 4.5rem;
+    font-size: clamp(3rem, 5vw + 0.5rem, 3.75rem);
   }
   .hero-intro {
     font-size: 1.6rem;
