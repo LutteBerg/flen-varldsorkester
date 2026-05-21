@@ -1,29 +1,33 @@
 # Deployment Guide
 
-This project is configured as a Vite-based Single Page Application (SPA) with Progressive Web App (PWA) support. 
+This project is a Vite + React SPA (with PWA support) deployed to Cloudflare Pages.
+Backend persistence is via Cloudflare D1 + Pages Functions — see `CMS_SETUP.md`
+for the full backend setup.
 
-## Cloudflare Pages Setup
+## Cloudflare Pages settings
 
-To deploy this project to Cloudflare Pages via GitHub/GitLab:
+| Setting | Value |
+|---|---|
+| **Root Directory** | *(empty / `/`)* — this repo's root IS the Vite project root |
+| Framework preset | Vite (or None) |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Compatibility date | `2026-05-01` (see `wrangler.jsonc`) |
 
-1. **Root directory**: `app` (Since the Vite project is inside the `app` folder, you MUST set the Root Directory to `app` in Cloudflare Pages settings)
-2. **Framework preset**: Vite (or None)
-3. **Build command**: `npm run build`
-4. **Build output directory**: `dist`
-5. **Environment variables**: None required for the frontend.
+## Routing (SPA + API)
 
-## Routing (SPA)
+- `public/_redirects` contains `/* /index.html 200` so deep links like
+  `https://yoursite.com/flen-varldsorkester` resolve to the SPA.
+- Pages Functions under `functions/` match BEFORE `_redirects`, so `/api/*`
+  always hits the Functions handlers — the SPA fallback never swallows them.
 
-Since this is a client-side routed application, Cloudflare Pages needs to redirect all non-file requests to `index.html`. 
-This is automatically handled by the `public/_redirects` file which contains:
-```
-/* /index.html 200
-```
-This ensures direct links like `https://yoursite.com/flen-varldsorkester` work without returning a 404 error.
+## Bindings + secrets
 
-## Mock CMS (localStorage)
+- D1 database: bind as `DB` (see `wrangler.jsonc`) — `wrangler d1 create lutte-berg-cms`, then paste the `database_id`.
+- Secrets (all four required):
+  - `ADMIN_PASSWORD_HASH`
+  - `ADMIN_PASSWORD_SALT`
+  - `ADMIN_PASSWORD_ITERATIONS`
+  - `SESSION_SECRET`
 
-The current version uses `localStorage` as a mock CMS to store text, media URLs, and settings.
-- Changes made in the `/admin` panel are saved in your current browser.
-- If you need to refresh the content to the initial state (from `seedContent.json`), you can use the "Återställ från seedContent" button in the admin dashboard.
-- **Future Note**: For true production persistence, replace the `localStorageAdapter` with a backend service like Cloudflare D1 or a headless CMS.
+See `CMS_SETUP.md` step 1 for the full setup commands.

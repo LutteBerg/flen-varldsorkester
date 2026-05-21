@@ -1,89 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
+import VideoEmbed, { VideoThumbnail } from '../components/VideoEmbed';
 import './Section.css';
-
-function YouTubeEmbed({ url }) {
-  if (!url) return null;
-  let videoId = '';
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1].split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1].split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1].split('?')[0];
-  }
-  
-  if (!videoId) return null;
-  
-  return (
-    <div className="video-wrapper">
-      <iframe 
-        width="100%" 
-        height="100%" 
-        src={`https://www.youtube.com/embed/${videoId}?rel=0`} 
-        title="YouTube video player" 
-        frameBorder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowFullScreen
-      ></iframe>
-    </div>
-  );
-}
-
-function VideoThumbnail({ url }) {
-  if (!url) return null;
-  let videoId = '';
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1].split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1].split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1].split('?')[0];
-  }
-  
-  if (!videoId) return null;
-  const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-  return (
-    <div className="video-thumb-wrapper">
-      <img src={thumbUrl} alt="Video thumbnail" />
-      <div className="play-indicator">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-      </div>
-    </div>
-  );
-}
-
-function YouTubeBackgroundHero({ url }) {
-  if (!url) return null;
-  let videoId = '';
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1].split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1].split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1].split('?')[0];
-  }
-  
-  if (!videoId) return null;
-
-  return (
-    <div className="video-hero-wrapper">
-      <div className="video-hero-overlay"></div>
-      <iframe
-        className="video-hero-iframe"
-        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1&playsinline=1`}
-        title="Background video"
-        frameBorder="0"
-        allow="autoplay; encrypted-media"
-        tabIndex="-1"
-      ></iframe>
-    </div>
-  );
-}
 
 export default function Section() {
   const { slug } = useParams();
@@ -98,13 +19,16 @@ export default function Section() {
       setLoading(true);
       const g = await contentRepository.getGlobalContent();
       const s = await contentRepository.getSectionBySlug(slug);
-      
+
       setGlobalContent(g);
       setSection(s);
-      
+
       if (s) {
         const n = await contentRepository.getNewsBySection(s.id);
         const e = await contentRepository.getEventsBySection(s.id);
+        // Defense-in-depth: the API already filters drafts out of the public
+        // payload, but we filter again here in case the adapter is the
+        // SeedAdapter (dev mode) where everything is "published" anyway.
         setNews(n.filter(item => item.status === 'published'));
         setEvents(e.filter(item => item.status === 'published'));
       }
@@ -116,24 +40,31 @@ export default function Section() {
   if (loading) return <div className="container" style={{padding: '80px 32px'}}>Laddar...</div>;
   if (!section) return <div className="container" style={{padding: '80px 32px'}}>Sektionen hittades inte.</div>;
 
-  const isVideoHero = section.heroMediaType === 'video' && section.videos?.find(v => v.pinned);
-  const pinnedVideo = section.videos?.find(v => v.pinned);
-  
-  // Previews
+  // Pinned-first ordering already enforced by the API; videos[0] is the leader.
+  const sortedVideos = [...(section.videos || [])].sort(byPinnedThenOrder);
+  const pinnedVideo = sortedVideos.find(v => v.pinned);
+  const isVideoHero = section.heroMediaType === 'video' && pinnedVideo;
+
   const previewEvents = events.slice(0, 3);
   const previewNews = news.slice(0, 2);
-  const previewGallery = section.galleryImages ? section.galleryImages.slice(0, 3) : [];
-  const previewVideos = section.videos ? section.videos.filter(v => !v.pinned).slice(0, 2) : [];
-  
-  const hasMoreGallery = (section.galleryImages?.length > 3) || (section.videos?.length > (pinnedVideo ? 1 : 0));
+  const previewGallery = (section.galleryImages || []).slice(0, 3);
+  const previewVideos = sortedVideos.filter(v => !v.pinned).slice(0, 2);
 
   return (
     <div className="section-page animate-fade-in">
-      
+
       {/* Top Split Hero */}
       <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>
-        {isVideoHero && <YouTubeBackgroundHero url={pinnedVideo.url} />}
-        
+        {isVideoHero && (
+          <VideoEmbed
+            videoId={pinnedVideo.videoId}
+            url={pinnedVideo.url}
+            embedUrl={pinnedVideo.embedUrl}
+            mode="background"
+            title="Bakgrundsvideo"
+          />
+        )}
+
         <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
           <div className="hero-text-side">
             <Link to="/" className="back-link">
@@ -158,12 +89,12 @@ export default function Section() {
       {/* Content Area */}
       <section className="section-content-grid container">
         <div className="main-col">
-          
+
           <div className="prose">
             <p>{section.fullDescription}</p>
           </div>
 
-          {/* Child Pages Preview (e.g. Musaik) */}
+          {/* Child Pages Preview */}
           {section.childPages && section.childPages.map(child => (
             <div key={child.slug} className="musaik-section">
               <h2 className="block-title" style={{fontSize: '1.75rem'}}>{child.title}</h2>
@@ -247,13 +178,13 @@ export default function Section() {
           <div className="media-section">
             <h2 className="block-title">Galleri & Video</h2>
             <div className="gallery-grid">
-              {previewVideos.map((vid, idx) => (
-                <Link to={`/${slug}/galleri?tab=video`} key={`v-${idx}`} className="gallery-item video-item">
-                  <VideoThumbnail url={vid.url} />
+              {previewVideos.map((vid) => (
+                <Link to={`/${slug}/galleri?tab=video`} key={`v-${vid.id}`} className="gallery-item video-item">
+                  <VideoThumbnail videoId={vid.videoId} url={vid.url} />
                 </Link>
               ))}
-              {previewGallery.map((img, idx) => (
-                <Link to={`/${slug}/galleri?tab=bilder`} key={`i-${idx}`} className="gallery-item">
+              {previewGallery.map((img) => (
+                <Link to={`/${slug}/galleri?tab=bilder`} key={`i-${img.id}`} className="gallery-item">
                   <img src={img.src} alt={img.caption || "Galleri bild"} />
                 </Link>
               ))}
@@ -270,4 +201,9 @@ export default function Section() {
       </div>
     </div>
   );
+}
+
+function byPinnedThenOrder(a, b) {
+  if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+  return (a.sortOrder || 0) - (b.sortOrder || 0);
 }

@@ -3,34 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
-
-function YouTubeEmbed({ url }) {
-  if (!url) return null;
-  let videoId = '';
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1].split('&')[0];
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1].split('?')[0];
-  } else if (url.includes('youtube.com/embed/')) {
-    videoId = url.split('embed/')[1].split('?')[0];
-  }
-  
-  if (!videoId) return null;
-  
-  return (
-    <div className="video-wrapper">
-      <iframe 
-        width="100%" 
-        height="100%" 
-        src={`https://www.youtube.com/embed/${videoId}?rel=0`} 
-        title="YouTube video player" 
-        frameBorder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowFullScreen
-      ></iframe>
-    </div>
-  );
-}
+import VideoEmbed from '../components/VideoEmbed';
 
 export default function ChildPage() {
   const { slug, childSlug } = useParams();
@@ -44,10 +17,10 @@ export default function ChildPage() {
       setLoading(true);
       const g = await contentRepository.getGlobalContent();
       const s = await contentRepository.getSectionBySlug(slug);
-      
+
       setGlobalContent(g);
       setSection(s);
-      
+
       if (s && s.childPages) {
         const c = s.childPages.find(p => p.slug === childSlug);
         setChildPage(c);
@@ -60,6 +33,13 @@ export default function ChildPage() {
   if (loading) return <div className="container" style={{padding: '80px 32px'}}>Laddar...</div>;
   if (!section || !childPage) return <div className="container" style={{padding: '80px 32px'}}>Sidan hittades inte.</div>;
 
+  // Pinned-first; API already sorts but normalize again for safety.
+  const videos = [...(childPage.videos || [])].sort((a, b) => {
+    if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+    return (a.sortOrder || 0) - (b.sortOrder || 0);
+  });
+  const leadVideo = videos[0];
+
   return (
     <div className="section-page animate-fade-in" style={{paddingTop: '80px', paddingBottom: '80px'}}>
       <div className="container">
@@ -70,9 +50,14 @@ export default function ChildPage() {
         <h1 className="section-title" style={{marginBottom: '32px'}}>{childPage.title}</h1>
         <p className="section-lead" style={{marginBottom: '48px'}}>{childPage.shortDescription}</p>
 
-        {childPage.videos && childPage.videos.length > 0 && (
+        {leadVideo && (
           <div className="featured-media-block" style={{marginBottom: '60px'}}>
-            <YouTubeEmbed url={childPage.videos[0].url} />
+            <VideoEmbed
+              videoId={leadVideo.videoId}
+              url={leadVideo.url}
+              embedUrl={leadVideo.embedUrl}
+              title={leadVideo.title || childPage.title}
+            />
           </div>
         )}
 
@@ -84,8 +69,8 @@ export default function ChildPage() {
           <div className="gallery-section" style={{marginTop: '60px', marginBottom: '60px'}}>
             <h2 className="block-title">Bildgalleri</h2>
             <div className="gallery-grid">
-              {childPage.galleryImages.map((img, idx) => (
-                <div key={idx} className="gallery-item">
+              {childPage.galleryImages.map((img) => (
+                <div key={img.id} className="gallery-item">
                   <img src={img.src} alt={img.caption || "Galleri bild"} />
                   {img.caption && <div className="gallery-caption">{img.caption}</div>}
                 </div>
