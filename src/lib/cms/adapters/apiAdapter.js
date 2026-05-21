@@ -151,12 +151,21 @@ async function adminFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-  if (r.status === 401) throw new UnauthorizedError();
+  if (r.status === 401) {
+    // Mid-session expiry: bounce to login so admin doesn't see a cryptic
+    // "Not authenticated" banner and assume the save quietly failed.
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/login')) {
+      window.location.assign('/admin/login');
+    }
+    throw new UnauthorizedError();
+  }
   if (r.status === 204) return {};
   let data = null;
   try { data = await r.json(); } catch { /* no body */ }
   if (!r.ok) {
     const msg = (data && data.error) ? data.error : `Request to ${path} failed (${r.status})`;
+    // Surface to console too, so admin can self-diagnose via DevTools.
+    if (typeof console !== 'undefined') console.error(`adminFetch ${path} ${r.status}`, data);
     throw new Error(msg);
   }
   return data || {};

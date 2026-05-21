@@ -9,6 +9,14 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      workbox: {
+        // SPA navigation fallback must NEVER intercept /api/*. Pages Functions
+        // serve API routes; if the SW returned cached index.html for an
+        // /api/admin/* fetch we'd get HTML where JSON is expected and every
+        // admin save would mysteriously "succeed" (200 OK) but the response
+        // wouldn't parse, masking real errors.
+        navigateFallbackDenylist: [/^\/api\//],
+      },
       manifest: {
         name: 'Kulturföreningen Flen Världsorkester',
         short_name: 'Flen Världsorkester',
