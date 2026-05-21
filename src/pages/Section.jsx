@@ -8,6 +8,7 @@ import VideoModal from '../components/VideoModal';
 import MediaTabs from '../components/MediaTabs';
 import MediaPreviewGrid from '../components/MediaPreviewGrid';
 import HeroVideoSection from '../components/HeroVideoSection';
+import MusaikFeatureCard from '../components/MusaikFeatureCard';
 import './Section.css';
 
 // Slugs that should render the new HeroVideoSection at the top (with audio
@@ -131,14 +132,18 @@ export default function Section() {
             <p>{section.fullDescription}</p>
           </div>
 
-          {/* Child Pages Preview */}
-          {section.childPages && section.childPages.map(child => (
-            <div key={child.slug} className="musaik-section">
-              <h2 className="block-title" style={{fontSize: '1.75rem'}}>{child.title}</h2>
-              <p className="prose" style={{marginBottom: '24px', fontSize: '1.1rem'}}>{child.shortDescription}</p>
-              <Link to={`/${slug}/${child.slug}`} className="btn-secondary">Läs mer om {child.title}</Link>
-            </div>
-          ))}
+          {/* Child Pages Preview — Musaik (when present under FVO) is rendered
+              below the main grid as a visually distinct featured card; other
+              children stay as inline blocks here. */}
+          {section.childPages && section.childPages
+            .filter(child => !(useNewHero && child.slug === 'musaik-projektet'))
+            .map(child => (
+              <div key={child.slug} className="musaik-section">
+                <h2 className="block-title" style={{fontSize: '1.75rem'}}>{child.title}</h2>
+                <p className="prose" style={{marginBottom: '24px', fontSize: '1.1rem'}}>{child.shortDescription}</p>
+                <Link to={`/${slug}/${child.slug}`} className="btn-secondary">Läs mer om {child.title}</Link>
+              </div>
+            ))}
 
           {/* News Preview */}
           <div className="news-section">
@@ -208,6 +213,22 @@ export default function Section() {
           </div>
         </aside>
       </section>
+
+      {/* Featured child-project block — Musaik on /flen-varldsorkester */}
+      {useNewHero && (() => {
+        const musaik = (section.childPages || []).find(c => c.slug === 'musaik-projektet');
+        if (!musaik) return null;
+        return (
+          <MusaikFeatureCard
+            logoSrc="/assets/musaik/logo.png"
+            logoAlt="Musaik logotyp"
+            title={musaik.title || 'Musaik Projektet'}
+            description={musaik.shortDescription || 'Ett projekt inom Flen Världsorkester med fokus på skapande, gemenskap och musikaliska uttryck.'}
+            ctaLabel={`Läs mer om ${musaik.title || 'Musaik'}`}
+            ctaTo={`/${slug}/${musaik.slug}`}
+          />
+        );
+      })()}
 
       {/* Section media preview — Bilder / Video tabs with 3 + 3 + "Visa fler" */}
       {(hasImages || hasVideos) && (
