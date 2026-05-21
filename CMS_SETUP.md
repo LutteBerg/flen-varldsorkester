@@ -9,16 +9,49 @@ This site uses a Cloudflare-native CMS:
 
 ---
 
+## 0. Cloudflare account check (DO THIS FIRST)
+
+⚠️ **This site lives in Lutte's separate Cloudflare account.** Before creating D1,
+applying migrations, or setting secrets, confirm Wrangler is authenticated into
+the correct account — otherwise the site and database may end up in different
+accounts and the deploy will silently fail.
+
+```bash
+npx wrangler whoami
+```
+
+If the output shows an account that is **not** Lutte's, switch:
+
+```bash
+npx wrangler logout
+npx wrangler login
+```
+
+Then log in with Lutte's Cloudflare account in the browser window that opens.
+
+Run `npx wrangler whoami` again to confirm.
+
+Only proceed to step 1 once the active account is Lutte's.
+
+---
+
 ## 1. First-time setup
 
 ### 1.1 Create the D1 database
 ```bash
+# Confirm correct account first
+npx wrangler whoami
+# Should show Lutte's account.
+
 npx wrangler d1 create lutte-berg-cms
 ```
 Copy the returned `database_id` into `wrangler.jsonc` (replace `REPLACE_WITH_REAL_DB_ID`).
 
 ### 1.2 Run the schema migration (production)
 ```bash
+# Re-confirm correct account before running migrations on remote D1
+npx wrangler whoami
+
 npx wrangler d1 execute lutte-berg-cms --remote --file=migrations/0001_initial_schema.sql
 ```
 
@@ -51,6 +84,8 @@ SESSION_SECRET=...
 ### 1.6 Set the four secrets on Cloudflare
 Run each command and paste the value when prompted:
 ```bash
+npx wrangler whoami
+
 npx wrangler pages secret put ADMIN_PASSWORD_HASH
 npx wrangler pages secret put ADMIN_PASSWORD_SALT
 npx wrangler pages secret put ADMIN_PASSWORD_ITERATIONS
@@ -63,6 +98,15 @@ environments via the Cloudflare Pages dashboard.
 Push to GitHub. Cloudflare Pages builds and publishes automatically.
 Cloudflare Pages "Root Directory" should be **empty or `/`** (this repo's root IS
 the Vite project root — there is no `app/` subdirectory inside the repo).
+
+## GitHub repo connection check
+
+Before relying on auto-deploy from GitHub, verify in the Cloudflare Pages dashboard:
+
+1. Go to **Cloudflare dashboard → Pages → lutte-berg-orchester → Settings → Builds & deployments → Source**.
+2. The connected GitHub repository must belong to or be accessible by **Lutte's GitHub account** (or a GitHub organization Lutte is a member of with deploy access).
+3. If the repo is connected via someone else's GitHub account, future deploys will break when that person's token expires or access is revoked. Reconnect the integration via Lutte's GitHub account in that case.
+4. After any reconnect, push a small commit to trigger a fresh build and verify it deploys.
 
 ---
 
@@ -163,3 +207,4 @@ Logs everyone out immediately. Use this if you suspect a session cookie leak.
 | Login always fails with "Fel lösenord" | Hash mismatch with the local `hash-password.mjs` output | Regenerate hash and re-set the secret; ensure iterations match |
 | `Set-Cookie` not sticking | Browser blocks `Secure` cookie on `http://localhost` | Use `wrangler pages dev` which serves over `http://localhost` — modern browsers accept Secure cookies on localhost as an exception. If still broken, deploy to a preview URL. |
 | Migration fails with `UNIQUE constraint failed` | You're re-running `0002_seed.sql` after manual edits | Expected — `INSERT OR IGNORE` skips conflicts. Not an error. |
+| Wrangler keeps switching to the wrong Cloudflare account | The active account is stored in `~/.wrangler/config/default.toml`. Run `npx wrangler logout`, then `npx wrangler login` and choose Lutte's account in the browser. For machines that switch between accounts often, lock the active session with `export CLOUDFLARE_ACCOUNT_ID=<lutte-account-id>` (or `$env:CLOUDFLARE_ACCOUNT_ID=...` in PowerShell) before running wrangler commands. |

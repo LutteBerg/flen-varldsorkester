@@ -1,5 +1,12 @@
 # Deployment Guide
 
+> ⚠️ **Cloudflare account warning**
+>
+> Make sure Wrangler is authenticated into Lutte's Cloudflare account before
+> creating D1, applying migrations, or setting secrets. Otherwise the site
+> and database may end up in different Cloudflare accounts. Always run
+> `npx wrangler whoami` first.
+
 This project is a Vite + React SPA (with PWA support) deployed to Cloudflare Pages.
 Backend persistence is via Cloudflare D1 + Pages Functions — see `CMS_SETUP.md`
 for the full backend setup.
@@ -8,11 +15,15 @@ for the full backend setup.
 
 | Setting | Value |
 |---|---|
-| **Root Directory** | *(empty / `/`)* — this repo's root IS the Vite project root |
+| **Root Directory** | `/` (empty or `/`) — the `package.json` is at repo root, not in an `app/` subdirectory |
 | Framework preset | Vite (or None) |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | Compatibility date | `2026-05-01` (see `wrangler.jsonc`) |
+
+> **If your existing Pages project is configured with `Root Directory: app`**,
+> change it to empty / `/` in **Pages → Settings → Builds & deployments**.
+> Otherwise the build will fail to find `package.json`.
 
 ## Routing (SPA + API)
 
