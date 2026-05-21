@@ -7,7 +7,14 @@ import VideoEmbed from '../components/VideoEmbed';
 import VideoModal from '../components/VideoModal';
 import MediaTabs from '../components/MediaTabs';
 import MediaPreviewGrid from '../components/MediaPreviewGrid';
+import HeroVideoSection from '../components/HeroVideoSection';
 import './Section.css';
+
+// Slugs that should render the new HeroVideoSection at the top (with audio
+// controls and an explicit unmute affordance) instead of the legacy split
+// hero. We only wire this up for FVO in this pass; other sections still use
+// the standard hero. Add the slug here to opt a section in later.
+const HERO_VIDEO_SLUGS = new Set(['flen-varldsorkester']);
 
 export default function Section() {
   const { slug } = useParams();
@@ -52,6 +59,11 @@ export default function Section() {
   const pinnedVideo = sortedVideos.find(v => v.pinned);
   const isVideoHero = section.heroMediaType === 'video' && pinnedVideo;
 
+  // Hero-video opt-in: pinned YouTube first, otherwise the first video by
+  // sort order, otherwise null → image fallback inside HeroVideoSection.
+  const useNewHero = HERO_VIDEO_SLUGS.has(slug);
+  const heroVideo = useNewHero ? (pinnedVideo || sortedVideos[0] || null) : null;
+
   const previewEvents = events.slice(0, 3);
   const previewNews = news.slice(0, 2);
 
@@ -68,38 +80,48 @@ export default function Section() {
   return (
     <div className="section-page animate-fade-in">
 
-      {/* Top Split Hero */}
-      <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>
-        {isVideoHero && (
-          <VideoEmbed
-            videoId={pinnedVideo.videoId}
-            url={pinnedVideo.url}
-            embedUrl={pinnedVideo.embedUrl}
-            mode="background"
-            title="Bakgrundsvideo"
-          />
-        )}
-
-        <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
-          <div className="hero-text-side">
-            <Link to="/" className="back-link">
-              <ArrowLeft size={20} />
-              <span className="text-uppercase">Hem</span>
-            </Link>
-            <h1 className="section-title">{section.title}</h1>
-            <p className="section-lead">{section.shortDescription}</p>
-          </div>
-          {!isVideoHero && (
-            <div className="hero-visual-side">
-              {section.coverImage ? (
-                <img src={section.coverImage} alt={section.title} className="img-documentary" />
-              ) : (
-                <div className="accent-block"></div>
-              )}
-            </div>
+      {useNewHero ? (
+        <HeroVideoSection
+          video={heroVideo}
+          title={section.title}
+          lead={section.shortDescription}
+          backTo={{ to: '/', label: 'Hem' }}
+          fallbackImage={section.coverImage}
+        />
+      ) : (
+        /* Top Split Hero (legacy) */
+        <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>
+          {isVideoHero && (
+            <VideoEmbed
+              videoId={pinnedVideo.videoId}
+              url={pinnedVideo.url}
+              embedUrl={pinnedVideo.embedUrl}
+              mode="background"
+              title="Bakgrundsvideo"
+            />
           )}
-        </div>
-      </section>
+
+          <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
+            <div className="hero-text-side">
+              <Link to="/" className="back-link">
+                <ArrowLeft size={20} />
+                <span className="text-uppercase">Hem</span>
+              </Link>
+              <h1 className="section-title">{section.title}</h1>
+              <p className="section-lead">{section.shortDescription}</p>
+            </div>
+            {!isVideoHero && (
+              <div className="hero-visual-side">
+                {section.coverImage ? (
+                  <img src={section.coverImage} alt={section.title} className="img-documentary" />
+                ) : (
+                  <div className="accent-block"></div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Content Area */}
       <section className="section-content-grid container">
