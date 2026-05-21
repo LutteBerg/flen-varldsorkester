@@ -3,7 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
-import VideoEmbed, { VideoThumbnail } from '../components/VideoEmbed';
+import VideoEmbed from '../components/VideoEmbed';
+import VideoModal from '../components/VideoModal';
+import MediaTabs from '../components/MediaTabs';
+import MediaPreviewGrid from '../components/MediaPreviewGrid';
 import './Section.css';
 
 export default function Section() {
@@ -13,6 +16,8 @@ export default function Section() {
   const [news, setNews] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mediaTab, setMediaTab] = useState('bilder');
+  const [activeVideo, setActiveVideo] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -40,15 +45,25 @@ export default function Section() {
   if (loading) return <div className="container" style={{padding: '80px 32px'}}>Laddar...</div>;
   if (!section) return <div className="container" style={{padding: '80px 32px'}}>Sektionen hittades inte.</div>;
 
-  // Pinned-first ordering already enforced by the API; videos[0] is the leader.
+  // The API already sorts media by pinned DESC, sort_order ASC, created_at DESC,
+  // but resort defensively so we still get sane ordering when seedAdapter is in use.
   const sortedVideos = [...(section.videos || [])].sort(byPinnedThenOrder);
+  const sortedImages = [...(section.galleryImages || [])].sort(byPinnedThenOrder);
   const pinnedVideo = sortedVideos.find(v => v.pinned);
   const isVideoHero = section.heroMediaType === 'video' && pinnedVideo;
 
   const previewEvents = events.slice(0, 3);
   const previewNews = news.slice(0, 2);
-  const previewGallery = (section.galleryImages || []).slice(0, 3);
-  const previewVideos = sortedVideos.filter(v => !v.pinned).slice(0, 2);
+
+  const hasImages = sortedImages.length > 0;
+  const hasVideos = sortedVideos.length > 0;
+  // If the chosen tab has no items, fall back to the other tab so we never
+  // render a stranded empty pane.
+  const effectiveTab = (mediaTab === 'bilder' && !hasImages && hasVideos)
+    ? 'video'
+    : (mediaTab === 'video' && !hasVideos && hasImages)
+      ? 'bilder'
+      : mediaTab;
 
   return (
     <div className="section-page animate-fade-in">
@@ -172,29 +187,62 @@ export default function Section() {
         </aside>
       </section>
 
-      {/* Full-width Media Preview */}
-      {(previewGallery.length > 0 || previewVideos.length > 0) && (
+      {/* Section media preview — Bilder / Video tabs with 3 + 3 + "Visa fler" */}
+      {(hasImages || hasVideos) && (
         <section className="container">
           <div className="media-section">
-            <h2 className="block-title">Galleri & Video</h2>
-            <div className="gallery-grid">
-              {previewVideos.map((vid) => (
-                <Link to={`/${slug}/galleri?tab=video`} key={`v-${vid.id}`} className="gallery-item video-item">
-                  <VideoThumbnail videoId={vid.videoId} url={vid.url} />
-                </Link>
-              ))}
-              {previewGallery.map((img) => (
-                <Link to={`/${slug}/galleri?tab=bilder`} key={`i-${img.id}`} className="gallery-item">
-                  <img src={img.src} alt={img.caption || "Galleri bild"} />
-                </Link>
-              ))}
+            <div className="media-section-head">
+              <h2 className="block-title" style={{ marginBottom: 0 }}>Galleri</h2>
+              <MediaTabs
+                activeTab={effectiveTab}
+                onChange={setMediaTab}
+                hasImages={hasImages}
+                hasVideos={hasVideos}
+              />
             </div>
-            <div style={{marginTop: '32px', textAlign: 'center'}}>
-              <Link to={`/${slug}/galleri`} className="btn-secondary">Se hela galleriet</Link>
-            </div>
+
+            {effectiveTab === 'bilder' && (
+              <>
+                <MediaPreviewGrid items={sortedImages} type="bilder" maxItems={3} />
+                {sortedImages.length > 0 && (
+                  <div style={{ marginTop: '32px', textAlign: 'center' }}>
+                    <Link to={`/${slug}/galleri?tab=bilder`} className="btn-secondary">
+                      Visa fler bilder
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
+
+            {effectiveTab === 'video' && (
+              <>
+                <MediaPreviewGrid
+                  items={sortedVideos}
+                  type="video"
+                  maxItems={3}
+                  onVideoClick={setActiveVideo}
+                />
+                {sortedVideos.length > 0 && (
+                  <div style={{ marginTop: '32px', textAlign: 'center' }}>
+                    <Link to={`/${slug}/galleri?tab=video`} className="btn-secondary">
+                      Visa fler videor
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </section>
       )}
+
+      <VideoModal
+        isOpen={!!activeVideo}
+        onClose={() => setActiveVideo(null)}
+        videoId={activeVideo?.videoId}
+        embedUrl={activeVideo?.embedUrl}
+        url={activeVideo?.url}
+        title={activeVideo?.title}
+      />
 
       <div style={{ marginLeft: '-24px', marginRight: '-24px', marginTop: '40px' }}>
         <SocialCTA globalContent={globalContent} />
