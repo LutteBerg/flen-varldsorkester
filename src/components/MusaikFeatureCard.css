@@ -32,20 +32,22 @@
   }
 }
 
+/* White panel — the logo artwork has black "musAik PROJEKTET" text that needs
+   a light surround to read. The card body keeps its dark gradient. */
 .musaik-feature-media {
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 36px 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 @media (min-width: 768px) {
   .musaik-feature-media {
     padding: 48px 32px;
     border-bottom: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
   }
 }
 
