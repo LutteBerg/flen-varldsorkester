@@ -11,6 +11,42 @@ This project is a Vite + React SPA (with PWA support) deployed to Cloudflare Pag
 Backend persistence is via Cloudflare D1 + Pages Functions — see `CMS_SETUP.md`
 for the full backend setup.
 
+## Production deploy workflow (MANDATORY)
+
+**GitHub auto-build is NOT trusted for this project.** It has silently regressed production to a stale bundle at least twice. Always use the manual deploy.
+
+### After every merge to main:
+
+```powershell
+cd "E:\Lutte Berg\Orchester\app"
+git pull origin main          # get latest
+npm install                   # in case deps changed
+npm run deploy:production     # build + check + deploy + verify
+```
+
+This single command will:
+1. Build the project
+2. Run `postbuild` safety check (forbidden patterns: localStorage, etc.)
+3. Manually deploy via `wrangler pages deploy`
+4. Verify the live production bundle filename matches the local `dist/` bundle
+
+### If `npm run deploy:production` exits with mismatched bundle:
+
+Cloudflare's auto-build overwrote your manual deploy with a stale bundle. Re-run:
+```powershell
+npm run deploy:production
+```
+That will republish the correct bundle. Keep re-running until verification passes.
+
+### Do NOT judge deploy success by:
+- ❌ GitHub PR "All checks passed" — doesn't verify the deployed bundle
+- ❌ Cloudflare Pages "Success" status — doesn't catch the regression we saw
+- ❌ A working `/api/health` — that just confirms Functions are alive, not which bundle is served
+
+### Always judge by:
+- ✅ `npm run deploy:verify` exit code 0
+- ✅ Manual visual check after hard reload
+
 ## Cloudflare Pages settings
 
 | Setting | Value |

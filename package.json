@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "postbuild": "node scripts/check-bundle.mjs",
+    "build:verify": "npm run build && node scripts/check-bundle.mjs",
+    "deploy:manual": "wrangler pages deploy dist --branch main --project-name flen-varldsorkester",
+    "deploy:verify": "node scripts/verify-production-bundle.mjs",
+    "deploy:production": "npm run build:verify && npm run deploy:manual && npm run deploy:verify",
     "lint": "eslint .",
     "preview": "vite preview"
   },
