@@ -11,6 +11,58 @@ This project is a Vite + React SPA (with PWA support) deployed to Cloudflare Pag
 Backend persistence is via Cloudflare D1 + Pages Functions — see `CMS_SETUP.md`
 for the full backend setup.
 
+## Production deploy workflow (MANDATORY)
+
+**GitHub auto-build is NOT trusted for this project.** It has silently regressed production to a stale bundle at least twice. Always use the manual deploy.
+
+Production is **only considered correct** when `deploy:verify` confirms the live bundle filename equals the local `dist/` bundle built from the current `main` HEAD. That means production must be deployed from updated `main` after a PR is merged — not from a feature branch.
+
+### Mode B — Official production deploy (after PR merge) — THE workflow
+
+ALWAYS done from updated `main`. Never from a feature branch.
+
+```powershell
+# 1. PR merged on GitHub
+# 2. From your local machine:
+cd "E:\Lutte Berg\Orchester\app"
+git switch main
+git pull origin main
+npm install                   # in case deps changed
+npm run deploy:production     # build + check + deploy + verify
+```
+
+This single command will:
+1. Build the project
+2. Run `postbuild` safety check (forbidden patterns: localStorage, etc.)
+3. Manually deploy via `wrangler pages deploy`
+4. Verify the live production bundle filename matches the local `dist/` bundle
+
+The production bundle hash that comes from this run is the canonical state. Record it from the `deploy:verify` output (e.g. `index-XXXXXXXX.js`).
+
+### If `npm run deploy:production` exits with mismatched bundle:
+
+Cloudflare's auto-build overwrote your manual deploy with a stale bundle. Re-run:
+```powershell
+npm run deploy:production
+```
+That will republish the correct bundle. Keep re-running until verification passes.
+
+### Do NOT judge deploy success by:
+- ❌ GitHub PR "All checks passed" — doesn't verify the deployed bundle
+- ❌ Cloudflare Pages "Success" status — doesn't catch the regression we saw
+- ❌ A working `/api/health` — that just confirms Functions are alive, not which bundle is served
+- ❌ A green `deploy:verify` from a feature branch — that bundle is temporary, not the canonical main release
+
+### Always judge by:
+- ✅ `npm run deploy:verify` exit code 0, run from updated `main` after PR merge
+- ✅ Manual visual check after hard reload
+
+> **Mode A — Testing during development (feature branch) — smoke test only**
+>
+> You can run `npm run deploy:production` from a feature branch while developing to verify the deploy machinery works end-to-end (build, check, upload, verify). This is **not a release** — it just confirms the pipeline. The bundle that lands in production from a feature-branch run is temporary; the next Mode B deploy from `main` will replace it.
+>
+> **If you deployed from a feature branch for testing, you MUST re-run `npm run deploy:production` from updated `main` after the PR is merged — otherwise `main` and production drift apart.**
+
 ## Cloudflare Pages settings
 
 | Setting | Value |
