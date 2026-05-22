@@ -1,23 +1,32 @@
 import React, { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import './VideoModal.css';
 
-// Lightbox modal that plays a single YouTube video in an overlay.
+// Lightbox modal for either a YouTube video or a full-size image.
+//
+// Why a Portal: the modal must be `position: fixed` against the viewport.
+// Any ancestor with a non-`none` transform (we have one — `.animate-fade-in`
+// applies `transform: translateY(0)` permanently via `animation-fill-mode: forwards`)
+// becomes the containing block for `position: fixed`, pinning the modal to that
+// ancestor instead of the viewport. Rendering into `document.body` sidesteps the
+// entire ancestor chain.
 //
 // Props:
 //   isOpen   - whether to render the modal
 //   onClose  - called on × click, Esc, or backdrop click
-//   videoId  - YouTube video id (preferred)
+//   videoId  - YouTube video id (preferred when showing a video)
 //   embedUrl - or a normalized https://www.youtube.com/embed/<id> URL
 //   url      - raw URL fallback (we extract the id)
-//   title    - accessible iframe title; also rendered as caption when shown
+//   image    - { src, alt } — when set, render an image instead of a video
+//   title    - accessible label; also rendered as caption when shown
 //
 // A11y notes:
 //   - role="dialog" + aria-modal="true"
 //   - focus is moved to the close button on open and restored on close
 //   - keyboard trapping keeps Tab focus inside the modal while open
 //   - background scroll is locked while open
-export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, title }) {
+export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, image, title }) {
   const dialogRef = useRef(null);
   const closeBtnRef = useRef(null);
   const previousFocusRef = useRef(null);
@@ -81,29 +90,34 @@ export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, ti
 
   if (!isOpen) return null;
 
-  let id = videoId;
-  let src = embedUrl;
-  if (!src && id) {
-    src = `https://www.youtube.com/embed/${id}`;
-  } else if (!src && url) {
-    const m = url.match(/(?:embed\/|v=|youtu\.be\/)([A-Za-z0-9_-]+)/);
-    if (m) {
-      id = m[1];
-      src = `https://www.youtube.com/embed/${id}`;
-    }
-  }
-  if (!src) return null;
+  const isImage = !!(image && image.src);
 
-  // Auto-play once the modal opens (user-initiated click satisfies autoplay rules).
-  const iframeSrc = `${src}?autoplay=1&rel=0&modestbranding=1`;
+  let iframeSrc = null;
+  if (!isImage) {
+    let id = videoId;
+    let src = embedUrl;
+    if (!src && id) {
+      src = `https://www.youtube.com/embed/${id}`;
+    } else if (!src && url) {
+      const m = url.match(/(?:embed\/|v=|youtu\.be\/)([A-Za-z0-9_-]+)/);
+      if (m) {
+        id = m[1];
+        src = `https://www.youtube.com/embed/${id}`;
+      }
+    }
+    if (!src) return null;
+    // Modal opens from a real user click → counts as gesture → audio allowed.
+    // mute=0 is the YouTube default but we set it explicitly so the URL reads as intent.
+    iframeSrc = `${src}?autoplay=1&mute=0&rel=0&modestbranding=1`;
+  }
 
   function onBackdropClick(e) {
     if (e.target === e.currentTarget) handleClose();
   }
 
-  const accessibleTitle = title || 'YouTube video';
+  const accessibleTitle = title || (isImage ? (image.alt || 'Bild') : 'YouTube video');
 
-  return (
+  const modal = (
     <div
       className="video-modal-backdrop"
       onClick={onBackdropClick}
@@ -111,7 +125,7 @@ export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, ti
     >
       <div
         ref={dialogRef}
-        className="video-modal-dialog"
+        className={`video-modal-dialog${isImage ? ' video-modal-dialog--image' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={accessibleTitle}
@@ -121,24 +135,37 @@ export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, ti
           type="button"
           className="video-modal-close"
           onClick={handleClose}
-          aria-label="Stäng video"
+          aria-label={isImage ? 'Stäng bild' : 'Stäng video'}
         >
           <X size={28} aria-hidden="true" />
         </button>
 
-        <div className="video-modal-frame">
-          <iframe
-            src={iframeSrc}
-            title={accessibleTitle}
-            frameBorder="0"
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
+        {isImage ? (
+          <div className="video-modal-image-wrap">
+            <img
+              src={image.src}
+              alt={image.alt || title || ''}
+              className="video-modal-image"
+            />
+          </div>
+        ) : (
+          <div className="video-modal-frame">
+            <iframe
+              src={iframeSrc}
+              title={accessibleTitle}
+              frameBorder="0"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
 
         {title && <div className="video-modal-caption">{title}</div>}
       </div>
     </div>
   );
+
+  // Portal escapes any ancestor `transform` containing block.
+  return createPortal(modal, document.body);
 }

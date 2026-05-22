@@ -26,6 +26,7 @@ export default function Section() {
   const [loading, setLoading] = useState(true);
   const [mediaTab, setMediaTab] = useState('bilder');
   const [activeVideo, setActiveVideo] = useState(null);
+  const [activeImage, setActiveImage] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -78,8 +79,14 @@ export default function Section() {
       ? 'bilder'
       : mediaTab;
 
+  // Apply the hero-video modifier whenever EITHER hero variant renders edge-to-edge:
+  //   - useNewHero  → new HeroVideoSection (slug opt-in, full-bleed)
+  //   - isVideoHero → legacy .section-hero.has-video-bg (DB-driven)
+  // Without this, <main>'s 40px top padding wedges whitespace above the hero.
+  const hasFullBleedHero = isVideoHero || useNewHero;
+
   return (
-    <div className={`section-page animate-fade-in${isVideoHero ? ' section-page--has-hero-video' : ''}`}>
+    <div className={`section-page animate-fade-in${hasFullBleedHero ? ' section-page--has-hero-video' : ''}`}>
 
       {useNewHero ? (
         <HeroVideoSection
@@ -246,7 +253,12 @@ export default function Section() {
 
             {effectiveTab === 'bilder' && (
               <>
-                <MediaPreviewGrid items={sortedImages} type="bilder" maxItems={3} />
+                <MediaPreviewGrid
+                  items={sortedImages}
+                  type="bilder"
+                  maxItems={3}
+                  onImageClick={setActiveImage}
+                />
                 {sortedImages.length > 0 && (
                   <div style={{ marginTop: '32px', textAlign: 'center' }}>
                     <Link to={`/${slug}/galleri?tab=bilder`} className="btn-secondary">
@@ -285,6 +297,13 @@ export default function Section() {
         embedUrl={activeVideo?.embedUrl}
         url={activeVideo?.url}
         title={activeVideo?.title}
+      />
+
+      <VideoModal
+        isOpen={!!activeImage}
+        onClose={() => setActiveImage(null)}
+        image={activeImage ? { src: activeImage.src, alt: activeImage.caption } : null}
+        title={activeImage?.caption}
       />
 
       <div style={{ marginLeft: '-24px', marginRight: '-24px', marginTop: '40px' }}>

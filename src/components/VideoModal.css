@@ -68,6 +68,34 @@
   border: 0;
 }
 
+/* Image variant: the dialog hugs the image; the image scrolls if it's
+   taller than the viewport (max-height already capped by .video-modal-dialog). */
+.video-modal-dialog--image {
+  background: transparent;
+  box-shadow: none;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.video-modal-image-wrap {
+  width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-modal-image {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  width: auto;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .video-modal-caption {
   color: rgba(255, 255, 255, 0.9);
   font-family: var(--font-heading);
