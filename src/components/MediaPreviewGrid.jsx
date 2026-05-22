@@ -6,13 +6,16 @@ import './MediaPreviewGrid.css';
 // Always renders up to maxItems items in a 3-column tile layout.
 //
 // Props:
-//   items     - array of media items (already sorted)
-//   type      - 'bilder' | 'video'
-//   maxItems  - cap (default 3)
-//   onVideoClick - (item) => void; required when type === 'video'
-//                  to open the VideoModal lightbox
+//   items        - array of media items (already sorted)
+//   type         - 'bilder' | 'video'
+//   maxItems     - cap (default 3)
+//   onVideoClick - (item) => void; required when type === 'video' to open
+//                  the VideoModal lightbox
+//   onImageClick - (item) => void; optional when type === 'bilder'; if
+//                  provided, image tiles become buttons that open the
+//                  VideoModal lightbox in image mode
 
-export default function MediaPreviewGrid({ items, type, maxItems = 3, onVideoClick }) {
+export default function MediaPreviewGrid({ items, type, maxItems = 3, onVideoClick, onImageClick }) {
   const preview = (items || []).slice(0, maxItems);
   if (preview.length === 0) return null;
 
@@ -38,10 +41,23 @@ export default function MediaPreviewGrid({ items, type, maxItems = 3, onVideoCli
   return (
     <div className="media-preview-grid">
       {preview.map((img) => (
-        <div key={`i-${img.id}`} className="media-preview-tile">
-          <img src={img.src} alt={img.caption || 'Galleribild'} loading="lazy" />
-          {img.caption && <div className="media-preview-caption">{img.caption}</div>}
-        </div>
+        onImageClick ? (
+          <button
+            type="button"
+            key={`i-${img.id}`}
+            className="media-preview-tile media-preview-image"
+            onClick={() => onImageClick(img)}
+            aria-label={img.caption ? `Visa bild: ${img.caption}` : 'Visa bild'}
+          >
+            <img src={img.src} alt={img.caption || 'Galleribild'} loading="lazy" />
+            {img.caption && <div className="media-preview-caption">{img.caption}</div>}
+          </button>
+        ) : (
+          <div key={`i-${img.id}`} className="media-preview-tile">
+            <img src={img.src} alt={img.caption || 'Galleribild'} loading="lazy" />
+            {img.caption && <div className="media-preview-caption">{img.caption}</div>}
+          </div>
+        )
       ))}
     </div>
   );

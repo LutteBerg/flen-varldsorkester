@@ -32,20 +32,22 @@
   }
 }
 
+/* White panel so the Musaik logo (designed for light backgrounds) reads cleanly.
+   The dark gradient stays on the right body panel — only the left logo panel
+   is white. No border separator needed: the gradient contrast carries it. */
 .musaik-feature-media {
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 36px 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem;
+  border-bottom: none;
 }
 
 @media (min-width: 768px) {
   .musaik-feature-media {
-    padding: 48px 32px;
-    border-bottom: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.25rem;
+    border-right: none;
   }
 }
 
