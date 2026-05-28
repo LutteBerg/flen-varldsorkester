@@ -27,3 +27,12 @@ dist-ssr
 .dev.vars
 .wrangler/
 wrangler.toml.local
+
+# Image originals kept locally by scripts/optimize-images.mjs.
+# Not part of the production bundle and far too large for git history.
+image-originals/
+
+# Local environment files - never commit
+.env
+.env.*
+!.env.example
