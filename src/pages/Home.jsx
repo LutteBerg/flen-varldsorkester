@@ -21,11 +21,9 @@ export default function Home() {
 
   if (!globalContent) return null;
 
-  // Determine card style based on index to create the alternating pattern
-  // Card 0 (1st): white
-  // Card 1 (2nd): orange
-  // Card 2 (3rd): orange
-  // Card 3 (4th): white
+  // Determine card style based on index to create the alternating pattern:
+  //   Card 0 (1st): white   Card 1 (2nd): orange
+  //   Card 2 (3rd): orange  Card 3 (4th): white
   const getCardStyleClass = (index) => {
     if (index === 1 || index === 2) return 'card-orange';
     return 'card-white';
@@ -36,7 +34,7 @@ export default function Home() {
       <section className="hero-section container">
         <h1 className="hero-title">{globalContent.siteTitle}</h1>
         <p className="hero-intro">{globalContent.homeIntro}</p>
-        
+
         {globalContent.socialLinks && globalContent.socialLinks.length > 0 && (
           <div style={{marginTop: '24px', display: 'flex', gap: '16px'}}>
             <a href={globalContent.socialLinks[0].url} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{display: 'inline-flex', alignItems: 'center'}}>
@@ -50,14 +48,20 @@ export default function Home() {
       <section className="cards-section container">
         <div className="cards-grid">
           {sections.map((section, index) => (
-            <Link 
-              to={`/${section.slug}`} 
-              key={section.id} 
+            <Link
+              to={`/${section.slug}`}
+              key={section.id}
               className={`split-card ${getCardStyleClass(index)}`}
             >
               <div className="card-image-side">
                 {section.coverImage ? (
-                  <img src={section.coverImage} alt={section.title} className="img-documentary" />
+                  <img
+                    src={section.coverImage}
+                    alt={section.title}
+                    className="img-documentary"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding={index === 0 ? 'sync' : 'async'}
+                  />
                 ) : (
                   <div className="img-placeholder">Bild kommer</div>
                 )}

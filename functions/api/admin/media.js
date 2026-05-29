@@ -7,7 +7,6 @@
 //
 // YouTube normalization happens here. The raw URL is preserved in
 // media_items.url; the normalized form goes into video_id + embed_url.
-// Iframe HTML or anything containing < or > is rejected.
 
 import { json, error } from '../../lib/response.js';
 import { requireDb, nowIso, newId, wrap } from '../../lib/db.js';
@@ -55,11 +54,11 @@ export const onRequestPost = wrap(async ({ request, env }) => {
   await db.prepare(
     `INSERT INTO media_items (
        id, section_id, child_page_id, type, url, video_id, embed_url,
-       title, caption, pinned, sort_order, status, context, created_at, updated_at
-     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)`
+       title, caption, alt, pinned, sort_order, status, context, created_at, updated_at
+     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)`
   ).bind(
     id, section_id, child_page_id, type, url, video_id, embed_url,
-    stringOr(body.title, ''), stringOr(body.caption, ''),
+    stringOr(body.title, ''), stringOr(body.caption, ''), stringOr(body.alt, ''),
     body.pinned ? 1 : 0,
     Number.isInteger(body.sortOrder) ? body.sortOrder : 0,
     status, stringOr(body.context, ''),

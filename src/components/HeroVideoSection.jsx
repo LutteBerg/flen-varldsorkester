@@ -1,32 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX, Play, Pause, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import './HeroVideoSection.css';
 
-// Section hero with a looping muted YouTube background and an overlay
-// title + lead text.
+// Section hero with a looping YouTube background and a minimal title ribbon.
 //
-// Why this exists separately from the existing video-bg hero in Section.css:
-// the existing one is purely decorative (pointer-events:none) so the user
-// can't unmute or pause. This hero is the *primary* content for /flen-varldsorkester,
-// so the user needs explicit affordances to unmute, pause and restart.
+// Phase 4 design:
+//   - The video occupies the whole hero. A bottom-only gradient ribbon
+//     darkens roughly the bottom third so the title remains readable.
+//   - Only the TITLE renders inside the hero (and optionally a "back" link).
+//     The lead/short description is intentionally NOT rendered here -- the
+//     caller is responsible for placing it in the body content area below.
+//   - Sound:
+//       * Browsers block autoplay with sound until there's a user gesture.
+//         The iframe always loads muted so it actually starts playing.
+//       * On the first user gesture anywhere on the page (pointerdown /
+//         touchstart / click / keydown), we remount the iframe with
+//         autoplay=1&mute=0. The click is the user activation YouTube
+//         needs to allow sound.
+//       * If that first attempt didn't actually unmute (e.g. the gesture
+//         was consumed by a child element before our handler ran), the
+//         always-visible "Slå på ljudet" button stays available as a fallback.
 //
 // Props:
-//   video         - { videoId, embedUrl, url, title } — required for video mode
-//   title         - section title (rendered centered on the gradient overlay)
-//   lead          - short description (rendered under the title)
-//   backTo        - { to, label } — optional back link rendered on top of overlay
+//   video         - { videoId, embedUrl, url, title } -- required for video mode
+//   title         - section title (rendered in the bottom ribbon)
+//   backTo        - { to, label } -- optional back link rendered on top of overlay
 //   fallbackImage - URL used when no video is supplied (image hero instead)
-//
-// Browser autoplay rules: <iframe> autoplay only works when muted. The user
-// must initiate sound. Clicking the speaker icon reloads the iframe with
-// `mute=0` and `autoplay=1` — the click counts as user gesture so audio plays.
+//   variant       - 'dark' (default) | 'light' -- controls the ribbon background
+//                   so a child page on a white surround doesn't draw a hard line
 
-export default function HeroVideoSection({ video, title, lead, backTo, fallbackImage }) {
+export default function HeroVideoSection({ video, title, backTo, fallbackImage, variant = 'dark' }) {
   const [muted, setMuted] = useState(true);
+  const [autoUnmuteTried, setAutoUnmuteTried] = useState(false);
   const [playing, setPlaying] = useState(true);
-  // Used to force-remount the iframe whenever the user toggles mute or restarts.
   const [reloadKey, setReloadKey] = useState(0);
   const iframeRef = useRef(null);
 
@@ -34,14 +41,33 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
   useEffect(() => {
     setMuted(true);
     setPlaying(true);
+    setAutoUnmuteTried(false);
     setReloadKey((k) => k + 1);
   }, [video?.videoId, video?.embedUrl]);
 
+  // Auto-unmute on first user gesture.
+  useEffect(() => {
+    if (autoUnmuteTried || !muted || !video) return;
+
+    const handleGesture = () => {
+      setAutoUnmuteTried(true);
+      setMuted(false);
+      setPlaying(true);
+      setReloadKey((k) => k + 1);
+    };
+
+    const events = ['pointerdown', 'touchstart', 'click', 'keydown'];
+    const opts = { capture: true, passive: true, once: true };
+    events.forEach((ev) => document.addEventListener(ev, handleGesture, opts));
+
+    return () => {
+      events.forEach((ev) => document.removeEventListener(ev, handleGesture, true));
+    };
+  }, [autoUnmuteTried, muted, video]);
+
   if (!video) {
-    // No usable video — fall back to a still image hero so the page never
-    // breaks because the section has no pinned youtube media.
     return (
-      <section className="hero-video-section hero-video-section--image">
+      <section className={`hero-video-section hero-video-section--image hero-video-section--${variant}`}>
         {fallbackImage && (
           <div
             className="hero-video-bg-img"
@@ -49,8 +75,8 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
             aria-hidden="true"
           />
         )}
-        <div className="hero-video-gradient" aria-hidden="true" />
-        <HeroOverlayContent title={title} lead={lead} backTo={backTo} />
+        <div className="hero-video-ribbon" aria-hidden="true" />
+        <HeroOverlayContent title={title} backTo={backTo} />
       </section>
     );
   }
@@ -58,7 +84,7 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
   const id = video.videoId || extractId(video.embedUrl || video.url || '');
   if (!id) {
     return (
-      <section className="hero-video-section hero-video-section--image">
+      <section className={`hero-video-section hero-video-section--image hero-video-section--${variant}`}>
         {fallbackImage && (
           <div
             className="hero-video-bg-img"
@@ -66,14 +92,12 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
             aria-hidden="true"
           />
         )}
-        <div className="hero-video-gradient" aria-hidden="true" />
-        <HeroOverlayContent title={title} lead={lead} backTo={backTo} />
+        <div className="hero-video-ribbon" aria-hidden="true" />
+        <HeroOverlayContent title={title} backTo={backTo} />
       </section>
     );
   }
 
-  // The `playlist=<id>` param is required for `loop=1` to actually loop a
-  // single video on YouTube — without it the iframe stops on first end.
   const muteParam = muted ? '1' : '0';
   const autoplayParam = playing ? '1' : '0';
   const src =
@@ -85,29 +109,25 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
     `&controls=0` +
     `&modestbranding=1` +
     `&rel=0` +
-    `&playsinline=1`;
+    `&playsinline=1` +
+    `&enablejsapi=1`;
 
   function toggleMute() {
-    // We force-remount the iframe with the new param value. Posting to the
-    // YouTube iframe API would also work but requires loading the YT JS SDK,
-    // which is heavier and not worth the dependency for a single button.
     setMuted((m) => !m);
     setPlaying(true);
     setReloadKey((k) => k + 1);
   }
-
   function togglePlay() {
     setPlaying((p) => !p);
     setReloadKey((k) => k + 1);
   }
-
   function restart() {
     setPlaying(true);
     setReloadKey((k) => k + 1);
   }
 
   return (
-    <section className="hero-video-section">
+    <section className={`hero-video-section hero-video-section--${variant}`}>
       <div className="hero-video-bg" aria-hidden="true">
         <iframe
           ref={iframeRef}
@@ -115,25 +135,36 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
           src={src}
           title={video.title || 'Bakgrundsvideo'}
           frameBorder="0"
-          loading="lazy"
           allow="autoplay; encrypted-media; picture-in-picture"
           tabIndex="-1"
         />
       </div>
 
-      <div className="hero-video-gradient" aria-hidden="true" />
+      <div className="hero-video-ribbon" aria-hidden="true" />
 
-      <HeroOverlayContent title={title} lead={lead} backTo={backTo} />
+      <HeroOverlayContent title={title} backTo={backTo} />
 
       <div className="hero-video-controls">
-        <button
-          type="button"
-          onClick={toggleMute}
-          className="hero-video-btn"
-          aria-label={muted ? 'Slå på ljudet' : 'Stäng av ljudet'}
-        >
-          {muted ? <VolumeX size={20} aria-hidden="true" /> : <Volume2 size={20} aria-hidden="true" />}
-        </button>
+        {muted ? (
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="hero-video-btn hero-video-btn--unmute"
+            aria-label="Slå på ljudet"
+          >
+            <VolumeX size={18} aria-hidden="true" />
+            <span className="hero-video-btn-label">Slå på ljudet</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="hero-video-btn"
+            aria-label="Stäng av ljudet"
+          >
+            <Volume2 size={20} aria-hidden="true" />
+          </button>
+        )}
         <button
           type="button"
           onClick={togglePlay}
@@ -155,18 +186,23 @@ export default function HeroVideoSection({ video, title, lead, backTo, fallbackI
   );
 }
 
-function HeroOverlayContent({ title, lead, backTo }) {
+function HeroOverlayContent({ title, backTo }) {
   return (
-    <div className="container hero-video-content">
+    <>
       {backTo && (
-        <Link to={backTo.to} className="hero-video-back">
-          <ArrowLeft size={20} aria-hidden="true" />
-          <span className="text-uppercase">{backTo.label}</span>
-        </Link>
+        <div className="hero-video-backwrap">
+          <div className="container">
+            <Link to={backTo.to} className="hero-video-back">
+              <ArrowLeft size={20} aria-hidden="true" />
+              <span className="text-uppercase">{backTo.label}</span>
+            </Link>
+          </div>
+        </div>
       )}
-      {title && <h1 className="hero-video-title">{title}</h1>}
-      {lead && <p className="hero-video-lead">{lead}</p>}
-    </div>
+      <div className="container hero-video-content">
+        {title && <h1 className="hero-video-title">{title}</h1>}
+      </div>
+    </>
   );
 }
 

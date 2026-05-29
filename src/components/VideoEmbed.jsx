@@ -32,14 +32,30 @@ export default function VideoEmbed({ videoId, url, embedUrl, title = 'YouTube vi
 
   if (!src) return null;
 
+  // IMPORTANT: build the iframe URL via URLSearchParams so we don't accidentally
+  // produce a `?si=...?autoplay=1` double-`?` if the upstream `src` already
+  // contains a query string (e.g. `embed/<id>?si=RN8...`). When that happened,
+  // the second `?` got consumed into the `si` value and YouTube silently
+  // dropped autoplay/mute/controls/rel — the symptom the old AUDIT_REPORT
+  // flagged as P1. `appendParams` works whether `src` is bare or already has `?`.
   if (mode === 'background') {
     // enablejsapi=1 lets us send commands (e.g. unMute) via postMessage once
     // the user makes a gesture. Browsers silently mute autoplay without one.
-    const bgSrc = `${src}?enablejsapi=1&autoplay=1&mute=1&controls=0&loop=1&playlist=${id}&rel=0&modestbranding=1&playsinline=1`;
+    const bgSrc = appendParams(src, {
+      enablejsapi: '1',
+      autoplay: '1',
+      mute: '1',
+      controls: '0',
+      loop: '1',
+      playlist: id,
+      rel: '0',
+      modestbranding: '1',
+      playsinline: '1',
+    });
     return <BackgroundVideoIframe src={bgSrc} title={title} className={className} />;
   }
 
-  const inlineSrc = `${src}?rel=0`;
+  const inlineSrc = appendParams(src, { rel: '0' });
   return (
     <div className={`video-wrapper ${className}`}>
       <iframe
@@ -98,6 +114,20 @@ function BackgroundVideoIframe({ src, title, className }) {
       />
     </div>
   );
+}
+
+// Safely append query params to a URL that may already have a query string.
+// We don't use `new URL()` because the iframe `src` is sometimes a relative-
+// looking string we don't want to resolve against window.location.
+function appendParams(src, params) {
+  if (!params) return src;
+  const qs = Object.entries(params)
+    .filter(([, v]) => v != null && v !== '')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+  if (!qs) return src;
+  const sep = src.includes('?') ? '&' : '?';
+  return `${src}${sep}${qs}`;
 }
 
 // Thumbnail (no iframe) — used in gallery previews.

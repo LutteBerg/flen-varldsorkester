@@ -5,11 +5,7 @@
 //   GET /api/admin/content        all incl. drafts (requires cookie)
 //
 // Writes: all under /api/admin/* with credentials:'include' so the
-// HttpOnly session cookie is sent. The cookie is set by /api/admin/login.
-//
-// The public-page reads (getSections, getNews, getEvents, getGlobalContent)
-// share a single cached snapshot per app load — one fetch covers an entire
-// page render. Admin reads use a separate getAdminContent() that includes drafts.
+// HttpOnly session cookie is sent.
 
 export class ApiAdapter {
   constructor() {
@@ -49,8 +45,6 @@ export class ApiAdapter {
     return r.json();
   }
 
-  // ── reads ──────────────────────────────────────────────────────────────────
-
   async getGlobalContent() { return (await this._public()).global; }
   async getSections()      { return (await this._public()).sections; }
   async getSectionBySlug(slug) {
@@ -58,8 +52,6 @@ export class ApiAdapter {
   }
   async getNews()   { return (await this._public()).news; }
   async getEvents() { return (await this._public()).events; }
-
-  // ── writes (all admin) ─────────────────────────────────────────────────────
 
   async updateGlobalContent(content) {
     const out = await adminFetch('/api/admin/site-settings', { method: 'PUT', body: JSON.stringify(content) });
@@ -136,6 +128,58 @@ export class ApiAdapter {
     this._invalidate();
     return true;
   }
+
+  // Upload an image file via multipart/form-data. The endpoint stores the
+  // file in R2 and inserts a media_items row in one step.
+  //   meta = { sectionId | childPageId, title?, caption?, alt?, pinned?, status?, onProgress? }
+  // We use XMLHttpRequest instead of fetch because fetch lacks upload
+  // progress events across all current browsers.
+  async uploadMedia(file, meta = {}) {
+    const fd = new FormData();
+    fd.set('file', file, file.name);
+    if (meta.sectionId)   fd.set('sectionId',   String(meta.sectionId));
+    if (meta.childPageId) fd.set('childPageId', String(meta.childPageId));
+    if (meta.title   != null) fd.set('title',   String(meta.title));
+    if (meta.caption != null) fd.set('caption', String(meta.caption));
+    if (meta.alt     != null) fd.set('alt',     String(meta.alt));
+    if (meta.pinned)          fd.set('pinned',  'true');
+    if (meta.status)          fd.set('status',  String(meta.status));
+
+    const data = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/admin/upload');
+      xhr.withCredentials = true;
+      if (typeof meta.onProgress === 'function') {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && e.total > 0) {
+            meta.onProgress(Math.min(1, e.loaded / e.total));
+          }
+        });
+      }
+      xhr.onerror = () => reject(new Error('Uppladdningen misslyckades. Försök igen.'));
+      xhr.onload = () => {
+        if (xhr.status === 401) {
+          if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/login')) {
+            window.location.assign('/admin/login');
+          }
+          reject(new UnauthorizedError());
+          return;
+        }
+        let payload = null;
+        try { payload = JSON.parse(xhr.responseText); } catch { /* ignore */ }
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(payload || {});
+        } else {
+          const msg = (payload && payload.error) ? payload.error : 'Uppladdningen misslyckades. Försök igen.';
+          reject(new Error(msg));
+        }
+      };
+      xhr.send(fd);
+    });
+
+    this._invalidate();
+    return data;
+  }
 }
 
 export class UnauthorizedError extends Error {
@@ -152,8 +196,6 @@ async function adminFetch(path, options = {}) {
     },
   });
   if (r.status === 401) {
-    // Mid-session expiry: bounce to login so admin doesn't see a cryptic
-    // "Not authenticated" banner and assume the save quietly failed.
     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/login')) {
       window.location.assign('/admin/login');
     }
@@ -164,7 +206,6 @@ async function adminFetch(path, options = {}) {
   try { data = await r.json(); } catch { /* no body */ }
   if (!r.ok) {
     const msg = (data && data.error) ? data.error : `Request to ${path} failed (${r.status})`;
-    // Surface to console too, so admin can self-diagnose via DevTools.
     if (typeof console !== 'undefined') console.error(`adminFetch ${path} ${r.status}`, data);
     throw new Error(msg);
   }

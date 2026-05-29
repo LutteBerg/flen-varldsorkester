@@ -23,9 +23,8 @@
   color: var(--color-orange);
 }
 
-/* Full-bleed hero-video pages (e.g. Flen Världsorkester):
-   hug the top of <main>, drop the hero's own vertical padding,
-   and give the body content explicit breathing room below. */
+/* Full-bleed hero-video pages: hug the top of <main>, drop the hero's own
+   vertical padding, and give body content explicit breathing room below. */
 .main-content:has(.section-page--has-hero-video) {
   padding-top: 0;
 }
@@ -36,15 +35,26 @@
   margin-bottom: clamp(1.5rem, 4vw, 3rem);
 }
 
-/* Same breathing room for the new full-bleed HeroVideoSection. */
 .section-page--has-hero-video .hero-video-section {
   margin-bottom: clamp(1.5rem, 4vw, 3rem);
 }
 
-/* Light variant — for child pages (e.g. Musaik Projektet) that sit on a
-   white surround. The video + dark overlay keeps title readability; the
-   wrapper just drops the off-white tint and divider so the hero meets
-   the white page cleanly. */
+/* Body lead — used by sections/child-pages where the short description was
+   previously rendered inside the hero overlay (Phase 4). */
+.section-body-lead {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  line-height: 1.45;
+  color: var(--color-text-main);
+  margin: 0 0 28px;
+  max-width: 720px;
+}
+.section-page--has-hero-video .section-body-lead {
+  margin-top: clamp(1rem, 2.5vw, 2rem);
+}
+
+/* Light variant — legacy support for any code still using is-light. */
 .section-hero.has-video-bg.is-light {
   background-color: #ffffff;
   border-bottom: none;
@@ -58,7 +68,7 @@
   height: 100%;
   z-index: 1;
   background-color: #000;
-  pointer-events: none; /* Disable interaction with youtube iframe */
+  pointer-events: none;
 }
 
 .video-hero-overlay {
@@ -75,21 +85,20 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100vw;
-  height: 56.25vw; /* 16:9 aspect ratio (100 / 16 * 9) */
-  min-height: 100vh;
-  min-width: 177.77vh; /* 16:9 aspect ratio (100 / 9 * 16) */
+  width: 100%;
+  height: 56.25vw;
+  min-height: 100%;
+  min-width: calc(100% * 16 / 9);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
-/* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .video-hero-iframe {
     display: none;
   }
   .video-hero-wrapper {
-    background-image: url('/assets/fvo/alma-orkester.JPG'); /* Fallback image */
+    background-image: url('/assets/fvo/alma-orkester.JPG');
     background-size: cover;
     background-position: center;
   }
@@ -154,26 +163,21 @@
 }
 
 .section-title {
-  font-size: 3rem;
+  /* Phase 5 — fluid title so long names don't blow past 390px viewports. */
+  font-size: clamp(2rem, 6vw, 4.5rem);
   margin-bottom: 24px;
   letter-spacing: -0.03em;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .section-lead {
-  font-size: 1.4rem;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
   color: var(--color-text-muted);
   max-width: 600px;
   line-height: 1.5;
 }
 
-@media (min-width: 768px) {
-  .section-title {
-    font-size: 4.5rem;
-  }
-}
-
-/* Content Area Spacing */
 .section-content-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -200,19 +204,19 @@
 }
 
 .block-title {
-  font-size: 2.2rem;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
   margin-bottom: 32px;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
-/* Featured Media & Video wrapper */
 .featured-media-block {
   margin-bottom: 48px;
 }
 
 .video-wrapper {
   position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  padding-bottom: 56.25%;
   height: 0;
   overflow: hidden;
   border-radius: 8px;
@@ -232,16 +236,16 @@
   margin-top: 60px;
   margin-bottom: 60px;
   background-color: var(--color-bg-alt);
-  padding: 40px;
+  /* Phase 5 — drop horizontal padding on phones to avoid overflow. */
+  padding: clamp(20px, 4vw, 40px);
   border-radius: 8px;
 }
 
-/* Galleries */
 .media-section {
   margin-top: 80px;
   margin-bottom: 80px;
   background: var(--color-bg-alt);
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   border-radius: 12px;
 }
 
@@ -278,19 +282,15 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
   }
-  
-  /* Make the first item span 2 columns for an editorial look */
   .gallery-grid > .gallery-item:first-child,
   .gallery-grid > .video-item:first-child {
     grid-column: span 2;
     grid-row: span 2;
   }
-  
   .gallery-grid > .gallery-item:first-child img {
     height: 100%;
     min-height: 400px;
   }
-  
   .gallery-grid > .video-item:first-child .video-wrapper {
     height: 100%;
     padding-bottom: 0;
@@ -310,7 +310,6 @@
   transform: translateY(-4px);
 }
 
-/* Video Thumbnails */
 .video-thumb-wrapper {
   position: relative;
   width: 100%;
@@ -398,14 +397,12 @@
   font-size: 1.1rem;
 }
 
-/* Empty states */
 .empty-state {
   color: var(--color-text-muted);
   font-style: italic;
   font-size: 1.1rem;
 }
 
-/* Designed News Cards */
 .news-section {
   margin-top: 60px;
   margin-bottom: 60px;
@@ -464,7 +461,6 @@
   margin-bottom: 12px;
 }
 
-/* Sidebar */
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -474,7 +470,7 @@
 .practical-card {
   background: var(--color-text-main);
   color: white;
-  padding: 40px;
+  padding: clamp(24px, 4vw, 40px);
 }
 
 .practical-title {
@@ -492,14 +488,12 @@
   color: rgba(255,255,255,0.9);
 }
 
-/* Events Section Wrapper */
 .events-section {
   background-color: var(--color-bg-alt);
-  padding: 32px;
+  padding: clamp(20px, 4vw, 32px);
   border-radius: 8px;
 }
 
-/* Designed Event Cards */
 .events-list {
   display: flex;
   flex-direction: column;

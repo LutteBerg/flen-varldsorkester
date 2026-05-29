@@ -231,3 +231,68 @@ curl -s https://flen-varldsorkester.pages.dev/api/health
 
 If any of those booleans is `false`, that's the secret to re-set via
 `npx wrangler pages secret put <NAME>`.
+
+---
+
+## Image uploads (R2, Phase 2 — May 2026)
+
+Image uploads in the admin write to a Cloudflare R2 bucket and store a
+`media_items` row that points at it. Videos still use YouTube links (no
+file uploads for video).
+
+### What changed in the schema
+
+Migration `0003_media_alt_and_uploads.sql` adds four columns to
+`media_items`. All are nullable:
+
+| Column        | Purpose |
+|---------------|---------|
+| `alt`         | Accessibility alt text, distinct from `caption` |
+| `object_key`  | R2 object key for self-hosted uploads (e.g. `uploads/2026/05/abc-foo.jpg`). NULL for YouTube items and for legacy `/assets/...` images |
+| `content_type`| MIME of the uploaded object (`image/jpeg`, `image/png`, `image/webp`) |
+| `size`        | Byte size of the uploaded object |
+
+Apply once on the remote D1:
+
+```bash
+npx wrangler d1 migrations apply lutte-berg-cms --remote
+```
+
+### What the admin sees
+
+- A new tab **Ladda upp bild** in the media-assignment block on any section
+  or child-page edit screen.
+- Native file picker, accepting JPG / PNG / WebP only (SVG is rejected).
+- 10 MB size cap, enforced both client-side (instant feedback) and
+  server-side (defense in depth).
+- Preview of the chosen file before saving.
+- Per-file metadata: title, caption, **alt text**, pinned, published/draft.
+- Progress bar (uses XMLHttpRequest `upload.onprogress`).
+- Friendly Swedish error messages: `Filen är för stor.`, `Endast JPG, PNG och WebP stöds.`, `Uppladdningen misslyckades. Försök igen.`
+
+### What gets stored
+
+- The R2 object lives at `uploads/YYYY/MM/<randhex>-<safe-stem>.<ext>`.
+  Randomness in the prefix means filename collisions never overwrite a
+  previously-uploaded image.
+- The DB row has `type='image'`, `url='/media/<object_key>'`,
+  plus `object_key`, `content_type`, `size`.
+
+### Editing existing media (Phase 3 — May 2026)
+
+Every media row in the admin now has a **Redigera** button. The edit form
+covers `title`, `caption`, `alt`, `pinned`, and `status`. It does **not**
+touch the underlying URL/file/YouTube id — so renaming a video no longer
+requires deleting and re-uploading.
+
+The PUT endpoint is the existing `/api/admin/media/:id`; the React side
+calls `contentRepository.updateMedia(id, updates)` which is already wired
+through `ApiAdapter`.
+
+### Deleting an uploaded image
+
+The DELETE handler now also calls `env.MEDIA_BUCKET.delete(object_key)` so
+the R2 object is reclaimed at the same time as the DB row. If R2 fails the
+DB row is still deleted (we'd rather leak the object than leave a row
+pointing at nothing the admin can edit).
+

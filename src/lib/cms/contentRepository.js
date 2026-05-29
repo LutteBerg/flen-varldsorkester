@@ -1,16 +1,11 @@
 // Content repository — the public face of the CMS for React code.
 //
 // Adapter selection:
-//   - import.meta.env.PROD === true  -> ApiAdapter (calls /api/content + /api/admin/*)
-//   - import.meta.env.VITE_USE_API === 'true' -> ApiAdapter (full-stack local dev via `wrangler pages dev`)
-//   - otherwise (dev default)        -> SeedAdapter (reads src/data/seedContent.json, read-only)
+//   - import.meta.env.PROD === true            -> ApiAdapter
+//   - import.meta.env.VITE_USE_API === 'true'  -> ApiAdapter (full-stack local dev)
+//   - otherwise (dev default)                  -> SeedAdapter (read-only)
 //
-// SeedAdapter mutations throw — dev mode is intentionally read-only. To test
-// the real backend locally, build then run:
-//   npm run build && npx wrangler pages dev dist --d1 DB=lutte-berg-cms-local
-//
-// All write operations target /api/admin/* and require a valid HttpOnly
-// session cookie set by /api/admin/login (auth lives in functions/_middleware.js).
+// SeedAdapter mutations throw — dev mode is intentionally read-only.
 
 import { ApiAdapter } from './adapters/apiAdapter';
 import { SeedAdapter } from './adapters/seedAdapter';
@@ -53,8 +48,16 @@ export const contentRepository = {
   createMedia: (item) => adapter.createMedia(item),
   updateMedia: (id, updates) => adapter.updateMedia(id, updates),
   deleteMedia: (id) => adapter.deleteMedia(id),
+  // uploadMedia is only present on ApiAdapter (SeedAdapter has no R2). We
+  // throw a clear message instead of letting the call silently no-op.
+  uploadMedia: (file, meta) => {
+    if (typeof adapter.uploadMedia !== 'function') {
+      return Promise.reject(new Error('Uppladdning är endast tillgänglig i produktion (eller `wrangler pages dev`).'));
+    }
+    return adapter.uploadMedia(file, meta);
+  },
 
-  // Section-scoped helpers (used by Section/NewsList/EventList pages)
+  // Section-scoped helpers (used by Section/NewsList/EventList pages).
   getNewsBySection: async (sectionId) => {
     const all = await adapter.getNews();
     return all.filter(n => n.sectionId === sectionId || n.sectionId === null);
@@ -64,6 +67,6 @@ export const contentRepository = {
     return all.filter(e => e.sectionId === sectionId || e.sectionId === null);
   },
 
-  // Mode flag for UI banners ("Sparar lokalt — read-only" in dev)
+  // Mode flag for UI banners ("Sparar lokalt — read-only" in dev).
   isReadOnly: () => adapter.isReadOnly === true,
 };

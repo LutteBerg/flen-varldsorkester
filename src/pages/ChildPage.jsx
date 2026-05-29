@@ -3,7 +3,20 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
-import VideoEmbed from '../components/VideoEmbed';
+import HeroVideoSection from '../components/HeroVideoSection';
+
+// Child-page renderer (e.g. /flen-varldsorkester/musaik-projektet).
+//
+// Phase 4 change: this page used to render a different hero implementation
+// (`VideoEmbed` mode="background" inside `.section-hero.has-video-bg.is-light`)
+// with a flat dark overlay covering the whole video and an early
+// listener-removing auto-unmute. That made the video almost invisible and
+// caused the "sound first visit, no sound on reload" bug.
+//
+// Now both the parent section AND its child pages use HeroVideoSection,
+// with the same bottom-ribbon design and the same auto-unmute logic. The
+// only difference is `variant="light"`, which keeps the surrounding page
+// background white and removes the bottom divider.
 
 export default function ChildPage() {
   const { slug, childSlug } = useParams();
@@ -39,44 +52,32 @@ export default function ChildPage() {
     return (a.sortOrder || 0) - (b.sortOrder || 0);
   });
   const leadVideo = videos[0];
-
-  const isVideoHero = !!leadVideo;
+  const hasHeroVideo = !!leadVideo;
 
   return (
-    <div className={`section-page animate-fade-in${isVideoHero ? ' section-page--has-hero-video' : ''}`}>
+    <div className={`section-page animate-fade-in${hasHeroVideo ? ' section-page--has-hero-video' : ''}`}>
 
-      {isVideoHero && (
-        <section className="section-hero has-video-bg is-light">
-          <VideoEmbed
-            videoId={leadVideo.videoId}
-            url={leadVideo.url}
-            embedUrl={leadVideo.embedUrl}
-            mode="background"
-            title={leadVideo.title || childPage.title}
-          />
-          <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="hero-text-side">
-              <Link to={`/${slug}`} className="back-link">
-                <ArrowLeft size={20} />
-                <span className="text-uppercase">Tillbaka till {section.title}</span>
-              </Link>
-              <h1 className="section-title">{childPage.title}</h1>
-              <p className="section-lead">{childPage.shortDescription}</p>
-            </div>
-          </div>
-        </section>
+      {hasHeroVideo ? (
+        <HeroVideoSection
+          video={leadVideo}
+          title={childPage.title}
+          backTo={{ to: `/${slug}`, label: `Tillbaka till ${section.title}` }}
+          fallbackImage={childPage.coverImage}
+          variant="light"
+        />
+      ) : (
+        <div className="container" style={{paddingTop: '80px'}}>
+          <Link to={`/${slug}`} className="back-link">
+            <ArrowLeft size={20} />
+            <span className="text-uppercase">Tillbaka till {section.title}</span>
+          </Link>
+          <h1 className="section-title" style={{marginBottom: '32px'}}>{childPage.title}</h1>
+        </div>
       )}
 
-      <div className="container" style={{paddingTop: isVideoHero ? '0' : '80px', paddingBottom: '80px'}}>
-        {!isVideoHero && (
-          <>
-            <Link to={`/${slug}`} className="back-link">
-              <ArrowLeft size={20} />
-              <span className="text-uppercase">Tillbaka till {section.title}</span>
-            </Link>
-            <h1 className="section-title" style={{marginBottom: '32px'}}>{childPage.title}</h1>
-            <p className="section-lead" style={{marginBottom: '48px'}}>{childPage.shortDescription}</p>
-          </>
+      <div className="container" style={{paddingBottom: '80px'}}>
+        {childPage.shortDescription && (
+          <p className="section-body-lead">{childPage.shortDescription}</p>
         )}
 
         <div className="prose">
@@ -89,7 +90,7 @@ export default function ChildPage() {
             <div className="gallery-grid">
               {childPage.galleryImages.map((img) => (
                 <div key={img.id} className="gallery-item">
-                  <img src={img.src} alt={img.caption || "Galleri bild"} />
+                  <img src={img.src} alt={img.alt || img.caption || "Galleri bild"} loading="lazy" />
                   {img.caption && <div className="gallery-caption">{img.caption}</div>}
                 </div>
               ))}
@@ -98,7 +99,7 @@ export default function ChildPage() {
         )}
 
       </div>
-      <div style={{ marginLeft: '-24px', marginRight: '-24px', marginTop: '60px' }}>
+      <div style={{ marginTop: '60px' }}>
         <SocialCTA globalContent={globalContent} />
       </div>
     </div>

@@ -1,26 +1,40 @@
 {
-  // Cloudflare Pages project configuration.
-  //
-  // Repository layout: this repo's root IS the Vite project root
-  // (package.json is at the repo root). The Cloudflare Pages
-  // "Root Directory" setting should therefore be empty or "/".
-  //
-  // Secrets are NOT stored here. Set them via:
-  //   npx wrangler pages secret put ADMIN_PASSWORD_HASH
-  //   npx wrangler pages secret put ADMIN_PASSWORD_SALT
-  //   npx wrangler pages secret put ADMIN_PASSWORD_ITERATIONS
-  //   npx wrangler pages secret put SESSION_SECRET
-  // ...or via the Cloudflare Pages dashboard (Settings -> Environment variables).
-
-  "name": "lutte-berg-orchester",
-  "pages_build_output_dir": "dist",
-  "compatibility_date": "2026-05-01",
-
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "lutte-berg-cms",
-      "database_id": "bbef26e5-fce2-4107-8ed5-40d9d592423a"
-    }
-  ]
+	// Cloudflare Pages project configuration.
+	//
+	// Repository layout: this repo's root IS the Vite project root.
+	// The Cloudflare Pages "Root Directory" setting should be empty or "/".
+	//
+	// Secrets are NOT stored here. Set them via:
+	//   npx wrangler pages secret put ADMIN_PASSWORD_HASH
+	//   npx wrangler pages secret put ADMIN_PASSWORD_SALT
+	//   npx wrangler pages secret put ADMIN_PASSWORD_ITERATIONS
+	//   npx wrangler pages secret put SESSION_SECRET
+	// ...or via the Cloudflare Pages dashboard (Settings -> Environment variables).
+	"name": "lutte-berg-orchester",
+	"pages_build_output_dir": "dist",
+	"compatibility_date": "2026-05-01",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "lutte-berg-cms",
+			"database_id": "bbef26e5-fce2-4107-8ed5-40d9d592423a"
+		}
+	],
+	// R2 bucket used for admin-uploaded image files (Phase 2 upload pipeline).
+	// The Pages dashboard must ALSO have this binding configured under
+	//   Settings -> Functions -> R2 bucket bindings
+	// for production deploys (wrangler.jsonc is only fully authoritative for
+	// `wrangler pages dev` and `wrangler pages deploy` invocations).
+	//
+	// Provision the bucket once:
+	//   npx wrangler r2 bucket create lutte-berg-media
+	//
+	// The bucket is private. Public access is served via the in-app
+	// /media/<key> route (functions/media/[[path]].js).
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "lutte-berg-media"
+		}
+	]
 }

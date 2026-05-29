@@ -1,8 +1,8 @@
 // Shared bulk-fetch builder used by both the public and admin content endpoints.
 //
-// publishedOnly=true (public) -> excludes draft sections, child pages, news, events,
-//                                and draft media items.
-// publishedOnly=false (admin) -> returns everything.
+// publishedOnly=true (public)  -> excludes draft sections, child pages, news, events,
+//                                 and draft media items.
+// publishedOnly=false (admin)  -> returns everything.
 
 export async function buildContentSnapshot(db, { publishedOnly }) {
   const statusFilter = publishedOnly ? "status = 'published'" : "1=1";
@@ -23,7 +23,6 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     db.prepare(`SELECT * FROM events ${publishedOnly ? `WHERE status = 'published'` : ''} ORDER BY date ASC, time ASC`).all(),
   ]);
 
-  // Global settings (single JSON row)
   let global = {
     siteTitle: '',
     homeIntro: '',
@@ -109,9 +108,14 @@ function toGalleryImage(m) {
     src: m.url,
     caption: m.caption || '',
     title: m.title || '',
+    alt: m.alt || '',
     pinned: !!m.pinned,
     sortOrder: m.sort_order,
     status: m.status,
+    // R2-upload metadata (NULL for legacy /assets/... images).
+    objectKey: m.object_key || null,
+    contentType: m.content_type || null,
+    size: typeof m.size === 'number' ? m.size : null,
   };
 }
 
@@ -122,6 +126,8 @@ function toVideo(m) {
     videoId: m.video_id,
     embedUrl: m.embed_url,
     title: m.title || '',
+    caption: m.caption || '',
+    alt: m.alt || '',
     pinned: !!m.pinned,
     sortOrder: m.sort_order,
     status: m.status,

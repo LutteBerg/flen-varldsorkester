@@ -1,5 +1,5 @@
 // PUT /api/admin/media/:id  — update a media item
-// DELETE /api/admin/media/:id  — delete a media item
+// DELETE /api/admin/media/:id  — delete a media item (and any R2 object it owns)
 
 import { json, error, noContent } from '../../../lib/response.js';
 import { requireDb, nowIso, wrap } from '../../../lib/db.js';
@@ -14,7 +14,6 @@ export const onRequestPut = wrap(async ({ params, request, env }) => {
   const existing = await db.prepare(`SELECT * FROM media_items WHERE id = ?1`).bind(id).first();
   if (!existing) return error(404, 'Media item not found');
 
-  // If URL is being updated and type is youtube, re-normalize.
   let nextUrl = existing.url;
   let nextVideoId = existing.video_id;
   let nextEmbedUrl = existing.embed_url;
@@ -44,6 +43,7 @@ export const onRequestPut = wrap(async ({ params, request, env }) => {
     embed_url:  nextEmbedUrl !== existing.embed_url ? nextEmbedUrl : undefined,
     title:      stringOr(body.title, undefined),
     caption:    stringOr(body.caption, undefined),
+    alt:        stringOr(body.alt, undefined),
     pinned:     typeof body.pinned === 'boolean' ? (body.pinned ? 1 : 0) : undefined,
     sort_order: Number.isInteger(body.sortOrder) ? body.sortOrder : undefined,
     status:     ['published', 'draft'].includes(body.status) ? body.status : undefined,
@@ -73,8 +73,20 @@ export const onRequestPut = wrap(async ({ params, request, env }) => {
 export const onRequestDelete = wrap(async ({ params, env }) => {
   const db = requireDb(env);
   const id = params.id;
-  const existing = await db.prepare(`SELECT id FROM media_items WHERE id = ?1`).bind(id).first();
+  const existing = await db.prepare(`SELECT id, object_key FROM media_items WHERE id = ?1`).bind(id).first();
   if (!existing) return error(404, 'Media item not found');
+
+  // If this row references an R2-stored upload, drop the underlying object
+  // too. Failing to clean R2 must not block the row deletion — better to
+  // leak an object than orphan a DB row pointing at nothing.
+  if (existing.object_key && env.MEDIA_BUCKET) {
+    try {
+      await env.MEDIA_BUCKET.delete(existing.object_key);
+    } catch (err) {
+      console.error('R2 delete failed for', existing.object_key, err);
+    }
+  }
+
   await db.prepare(`DELETE FROM media_items WHERE id = ?1`).bind(id).run();
   return noContent();
 });

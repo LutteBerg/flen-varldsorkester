@@ -39,17 +39,27 @@ function buildSnapshot() {
       sortOrder: idx,
       status: 'published',
     })),
-    videos: (s.videos || []).map((v, idx) => ({
-      id: `seed-${s.id}-vid-${idx}`,
-      url: v.url,
-      videoId: extractVideoId(v.url),
-      embedUrl: v.url, // seed has embed-style URLs already
-      title: v.title || '',
-      pinned: !!v.pinned,
-      sortOrder: idx,
-      status: 'published',
-      context: v.context || '',
-    })),
+    videos: (s.videos || []).map((v, idx) => {
+      // Match the API-side normalization: store the raw URL as `url` and the
+      // CANONICAL `https://www.youtube.com/embed/<id>` as `embedUrl`. The seed
+      // JSON contains URLs like `embed/<id>?si=...` and `youtu.be/<id>?si=...`;
+      // if we passed `v.url` straight through as `embedUrl`, downstream code
+      // that concatenated `?autoplay=1` would produce a `?si=...?autoplay=1`
+      // double-`?` and YouTube would silently drop autoplay/mute. Dev parity
+      // with prod = same canonical form here as `functions/lib/youtube.js`.
+      const vid = extractVideoId(v.url);
+      return {
+        id: `seed-${s.id}-vid-${idx}`,
+        url: v.url,
+        videoId: vid,
+        embedUrl: vid ? `https://www.youtube.com/embed/${vid}` : v.url,
+        title: v.title || '',
+        pinned: !!v.pinned,
+        sortOrder: idx,
+        status: 'published',
+        context: v.context || '',
+      };
+    }),
     childPages: (s.childPages || []).map((c, ci) => ({
       id: `seed-${s.id}-child-${ci}`,
       sectionId: s.id,
@@ -68,17 +78,21 @@ function buildSnapshot() {
         sortOrder: idx,
         status: 'published',
       })),
-      videos: (c.videos || []).map((v, idx) => ({
-        id: `seed-${s.id}-child-${ci}-vid-${idx}`,
-        url: v.url,
-        videoId: extractVideoId(v.url),
-        embedUrl: v.url,
-        title: v.title || '',
-        pinned: !!v.pinned,
-        sortOrder: idx,
-        status: 'published',
-        context: v.context || '',
-      })),
+      videos: (c.videos || []).map((v, idx) => {
+        // See note on parent .videos above — same canonical normalization.
+        const vid = extractVideoId(v.url);
+        return {
+          id: `seed-${s.id}-child-${ci}-vid-${idx}`,
+          url: v.url,
+          videoId: vid,
+          embedUrl: vid ? `https://www.youtube.com/embed/${vid}` : v.url,
+          title: v.title || '',
+          pinned: !!v.pinned,
+          sortOrder: idx,
+          status: 'published',
+          context: v.context || '',
+        };
+      }),
     })),
     status: 'published',
   }));

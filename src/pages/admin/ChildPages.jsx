@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { contentRepository } from '../../lib/cms/contentRepository';
-import VideoEmbed from '../../components/VideoEmbed';
-import { normalizeYouTubeUrl, YOUTUBE_INVALID_MESSAGE } from '../../lib/youtube';
+import MediaManager from './MediaManager';
 
 const EMPTY = {
   sectionId: '',
@@ -137,7 +136,7 @@ export default function AdminChildPages() {
           </div>
 
           {!isNew && editing.id && (
-            <MediaAssignmentSection
+            <MediaManager
               parent={{ childPageId: editing.id }}
               existing={[...(editing.videos || []), ...(editing.galleryImages || [])]}
               onChange={load}
@@ -205,96 +204,7 @@ export default function AdminChildPages() {
   );
 }
 
-// ── Media assignment (videos + images) for a parent (section OR child page) ──
-
-function MediaAssignmentSection({ parent, existing, onChange }) {
-  const readOnly = contentRepository.isReadOnly();
-  const [newKind, setNewKind] = useState('youtube');
-  const [newUrl, setNewUrl] = useState('');
-  const [newTitle, setNewTitle] = useState('');
-  const [newCaption, setNewCaption] = useState('');
-  const [newPinned, setNewPinned] = useState(false);
-  const [error, setError] = useState('');
-
-  const ytPreview = newKind === 'youtube' ? normalizeYouTubeUrl(newUrl) : null;
-
-  async function addItem() {
-    setError('');
-    try {
-      if (newKind === 'youtube' && !ytPreview) {
-        setError(YOUTUBE_INVALID_MESSAGE);
-        return;
-      }
-      const payload = {
-        type: newKind,
-        url: newUrl.trim(),
-        title: newTitle,
-        caption: newCaption,
-        pinned: newPinned,
-        ...parent,
-      };
-      await contentRepository.createMedia(payload);
-      setNewUrl(''); setNewTitle(''); setNewCaption(''); setNewPinned(false);
-      onChange();
-    } catch (e) {
-      setError(e.message || String(e));
-    }
-  }
-
-  async function removeItem(id) {
-    if (!window.confirm('Ta bort denna media?')) return;
-    try {
-      await contentRepository.deleteMedia(id);
-      onChange();
-    } catch (e) {
-      setError(e.message || String(e));
-    }
-  }
-
-  return (
-    <div style={{ marginTop: 32, padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #ddd' }}>
-      <h4 style={{ marginBottom: 4 }}>Tilldelad media <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>(sparas direkt)</span></h4>
-      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 12 }}>
-        Media sparas direkt när du klickar "Lägg till nu" eller "Ta bort nu". Knappen <strong>Avbryt</strong> nedan ångrar bara ändringar i textfälten — inte i media.
-      </p>
-      {existing.length === 0 && <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Ingen media tilldelad ännu.</p>}
-      {existing.map(m => (
-        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #eee' }}>
-          <span style={{ flex: 1, fontSize: '0.9rem' }}>
-            {m.videoId ? 'Video' : 'Bild'}: {m.title || m.caption || m.url || m.src}
-            {m.pinned && <strong style={{ color: 'var(--color-orange)', marginLeft: 8 }}>(fäst)</strong>}
-          </span>
-          <button className="btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => removeItem(m.id)} disabled={readOnly}>Ta bort nu</button>
-        </div>
-      ))}
-
-      <h5 style={{ marginTop: 16, marginBottom: 8 }}>Lägg till ny</h5>
-      {error && <div className="admin-login-error">{error}</div>}
-      <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12, marginBottom: 8 }}>
-        <select className="form-control" value={newKind} onChange={(e) => setNewKind(e.target.value)}>
-          <option value="youtube">YouTube</option>
-          <option value="image">Bild</option>
-        </select>
-        <input className="form-control" placeholder={newKind === 'youtube' ? 'YouTube URL (watch / youtu.be / embed)' : '/assets/...'} value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 8 }}>
-        <input className="form-control" placeholder="Titel" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-        <input className="form-control" placeholder="Bildtext" value={newCaption} onChange={(e) => setNewCaption(e.target.value)} />
-      </div>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <input type="checkbox" checked={newPinned} onChange={(e) => setNewPinned(e.target.checked)} />
-        Fäst överst
-      </label>
-      {ytPreview && (
-        <div className="admin-video-preview">
-          <VideoEmbed videoId={ytPreview.videoId} title="Förhandsvisning" />
-        </div>
-      )}
-      <div style={{ marginTop: 12 }}>
-        <button className="btn-primary" onClick={addItem} disabled={readOnly || !newUrl}>Lägg till nu</button>
-      </div>
-    </div>
-  );
-}
-
-export { MediaAssignmentSection };
+// MediaAssignmentSection is retained as a compatibility alias — Sections.jsx
+// imports it by name. The new implementation lives in MediaManager.jsx and
+// supports both image upload (R2) and per-item Edit.
+export { default as MediaAssignmentSection } from './MediaManager';
