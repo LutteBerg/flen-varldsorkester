@@ -16,7 +16,7 @@
 // edit form has never undone media changes, and we keep that behavior (with
 // a clear note in the UI).
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { contentRepository } from '../../lib/cms/contentRepository';
 import VideoEmbed from '../../components/VideoEmbed';
 import { normalizeYouTubeUrl, YOUTUBE_INVALID_MESSAGE } from '../../lib/youtube';
@@ -228,6 +228,11 @@ function UploadForm({ parent, onSaved, readOnly }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  // We keep the native <input type="file"> in the DOM but hide it.
+  // Browsers localize the native "Choose file / No file chosen" labels
+  // based on the OS locale, which leaked Russian into a Swedish admin
+  // on Lutte's machine. The visible UI below is fully Swedish.
+  const fileInputRef = useRef(null);
 
   function onPickFile(e) {
     setError('');
@@ -284,12 +289,33 @@ function UploadForm({ parent, onSaved, readOnly }) {
 
       <div className="form-group" style={{ marginBottom: 12 }}>
         <label className="form-label">Bildfil (JPG, PNG eller WebP, max 10 MB)</label>
+        {/* Visually hidden — keeps the form submit behaviour and accept filter
+            but suppresses the OS-localized "Choose file/No file chosen" label.
+            Triggered by the Swedish button below. */}
         <input
+          ref={fileInputRef}
           type="file"
           accept={ACCEPT_ATTR}
           onChange={onPickFile}
           disabled={readOnly || uploading}
+          style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
+          tabIndex={-1}
+          aria-hidden="true"
         />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={readOnly || uploading}
+          >
+            Välj bild från datorn
+          </button>
+          <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', overflowWrap: 'anywhere' }}>
+            {file ? file.name : 'Ingen bild vald.'}
+          </span>
+        </div>
       </div>
 
       {previewUrl && (

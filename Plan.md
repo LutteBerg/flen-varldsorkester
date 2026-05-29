@@ -8,31 +8,98 @@ Det här stycket är en levande sammanfattning ovanpå den ursprungliga uppgifts
 | 2 | Bilduppladdning i admin (R2) | ✅ Klar | `MEDIA_BUCKET` binding, `/api/admin/upload`, `/media/<key>`-routen, `MediaManager.jsx`. Migration 0003 körd. Bucket finns. |
 | 3 | Redigera media-titel/caption utan att radera | ✅ Klar | `PUT /api/admin/media/:id` + `EditMediaForm`. Bekräftat fungerar. |
 | 4 | Hero-video + titel-layout | ✅ Klar (efter dagens uppdatering) | Delad `HeroVideoSection`. **Idag, iteration 2:** (a) Auto-unmute har nu BÅDA strategierna: postMessage + iframe-remount med `mute=0` på första muted-gesten. Aktiveringar enligt HTML-spec (click / pointerdown / touchstart / keydown). `scroll`/`wheel` lyssnas också men kommer inte att starta ljud — webbläsares autoplay-policy tillåter inte ljud från scroll, det är ingen kodbugg, "Slå på ljudet"-knappen är fallback. (b) Botten-griböndet borttaget; titeln är nu en egen "label" (`.hero-video-title`) med svart fyllning + orange ram + vit text. (c) Tidigare "afterband" är borta. |
-| 4.2 | Nyheter + evenemang på child-page | ✅ Klar (idag) | `ChildPage.jsx` hämtar och visar förälder-sektionens publicerade nyheter och evenemang under brödtexten. Tidigare fanns dessa bara på `/flen-varldsorkester`, inte på `/flen-varldsorkester/musaik-projektet`. |
+| 4.2 | Nyheter + evenemang per sida (sektion ELLER undersida) | ✅ Klar (idag, iteration 2) | Migration `0004_news_events_child_page.sql` lägger till `child_page_id` på `news` + `events`. Admin-formulären visar nu en dropdown där man kan välja t.ex. *Flen Världsorkester / Musaik Projektet* för att lägga nyheten/evenemanget enbart på Musaik-sidan. Sektionssidor visar bara sektionsdirekta items (de Musaik-specifika bubblar inte upp till FVO). |
+| 4.3 | Title-label, Jazz/Målarateljen/Textilverkstad | ✅ Klar (idag) | `Section.jsx` använder nu `HeroVideoSection` för ALLA sektioner. Jazz-sidan (utan video) får samma orange-omramade titel-label och short-description som body-lead under hero. |
+| 4.4 | "Fäst överst" = en-per-sida-radio | ✅ Klar (idag) | Servern (`functions/api/admin/media.js` + `media/[id].js`) avpinnar automatiskt alla andra media-rader för samma föräldersida när admin pinnar något nytt. Effekt: max ett hero per sida. UI är kvar som checkbox men beteendet är radio-aktigt. |
+| 4.5 | Filväljarens lokalisering | ✅ Klar (idag) | Den nativa filinput'en är visuellt gömd; den synliga knappen är på svenska ("Välj bild från datorn") och bredvid står "Ingen bild vald." / filnamnet. Webbläsares OS-lokalisering läcker inte längre genom. |
 | 4.1 | Enhetligt galleri (Video/Foto-flikar) på child-pages | ✅ Klar (idag) | `ChildPage.jsx` använder nu `MediaTabs` + `MediaPreviewGrid` + `VideoModal`. Fixar bonusbuggen att videos uppladdade till t.ex. Musaik inte syntes någonstans. |
 | 5 | Mobil / responsiv | ✅ Klar | `overflow-x: clip`, `clamp()`-titlar, fluid section-padding. Behöver bara verifieras på 390px efter omdeploy. |
 | 6 | Prestanda | ✅ Klar | Bilder ~94% mindre (`scripts/optimize-images.mjs`), tumnaglar istället för iframes i galleri, lazy-loading. Hero-iframe är `eager` (rätt — den ligger ovan fold). |
 | 7 | Deploy | 🟡 Pågående | Första deployen körd idag (`index-oVkcDzSG.js`). **Behöver göras om** för att fasen-4-ljudfixen + den nya gallery-fliken på child-pages ska gå live. |
 
-## Det här behöver Jane göra nu vid tangentbordet
+## Det här behöver Jane göra nu vid tangentbordet (uppdaterad)
 
-1. `cd "E:\Lutte Berg\Orchester\app"` och titta på `git status` — i arbetsmappen ligger dagens ändringar i `src/components/HeroVideoSection.jsx`, `src/components/HeroVideoSection.css`, `src/pages/ChildPage.jsx`, och `Plan.md`.
-2. Granska diffen om du vill: `git diff src/components/HeroVideoSection.jsx src/components/HeroVideoSection.css src/pages/ChildPage.jsx`.
-3. Commit:
-   ```
-   git add src/components/HeroVideoSection.jsx src/components/HeroVideoSection.css src/pages/ChildPage.jsx Plan.md
-   git commit -m "fix(hero): bulletproof unmute on first click + remove afterband; style(hero): orange-bordered title label; feat(child-page): news/events + Video/Foto tabs gallery"
-   git push origin main
-   ```
-4. Deploy:
-   ```
-   npm run deploy:production
-   ```
-5. Rök-test på `https://flen-varldsorkester.pages.dev`:
-   - FVO-hero: vid första klick/scroll ska ljudet tändas (även efter sidladdning #3, #4, #100).
-   - Mörk band under videon ska synas — videon ska inte ligga klistrad mot bakgrundsfärgen.
-   - Musaik (`/flen-varldsorkester/musaik-projektet`): scrolla ner, det ska finnas `Galleri`-block med flikarna **Foto** / **Video**, och de uppladdade Musaik-videorna ska finnas där.
-   - 390px-vyn: ingen sidled-scroll.
+### Steg 1 — Applicera migration 0004 på remote D1
+
+Den nya migrationen lägger till `child_page_id` på `news` + `events`. Måste köras *före* deploy, annars kommer Cloudflare Functions att 500:a på POST/PUT av nyheter/evenemang.
+
+```
+cd "E:\Lutte Berg\Orchester\app"
+npx wrangler d1 migrations apply lutte-berg-cms --remote
+# svara y på frågan om tillgänglighet
+```
+
+Verifiera:
+
+```
+npx wrangler d1 execute lutte-berg-cms --remote --command "PRAGMA table_info(news);"
+```
+
+Kolla att `child_page_id` finns i utdata (samma för `events`).
+
+### Steg 2 — Granska och commit:a dagens ändringar
+
+```
+git status
+git diff --stat
+```
+
+Det här ska ha ändrats sedan förra commit:
+- `migrations/0004_news_events_child_page.sql` (nytt)
+- `functions/api/_lib/content.js`
+- `functions/api/admin/media.js`
+- `functions/api/admin/media/[id].js`
+- `functions/api/admin/news.js`
+- `functions/api/admin/news/[id].js`
+- `functions/api/admin/events.js`
+- `functions/api/admin/events/[id].js`
+- `src/lib/cms/contentRepository.js`
+- `src/pages/Section.jsx`
+- `src/pages/ChildPage.jsx`
+- `src/pages/admin/News.jsx`
+- `src/pages/admin/Events.jsx`
+- `src/pages/admin/MediaManager.jsx`
+- `src/components/HeroVideoSection.jsx`
+- `src/components/HeroVideoSection.css`
+- `Plan.md`
+
+```
+git add migrations/0004_news_events_child_page.sql `
+        functions/api/_lib/content.js `
+        functions/api/admin/media.js `
+        "functions/api/admin/media/[id].js" `
+        functions/api/admin/news.js `
+        "functions/api/admin/news/[id].js" `
+        functions/api/admin/events.js `
+        "functions/api/admin/events/[id].js" `
+        src/lib/cms/contentRepository.js `
+        src/pages/Section.jsx `
+        src/pages/ChildPage.jsx `
+        src/pages/admin/News.jsx `
+        src/pages/admin/Events.jsx `
+        src/pages/admin/MediaManager.jsx `
+        src/components/HeroVideoSection.jsx `
+        src/components/HeroVideoSection.css `
+        Plan.md
+
+git commit -m "feat: news/events per child-page (migration 0004); single-pinned-per-page; hero for all sections; Swedish file picker; bulletproof hero unmute"
+git push origin main
+```
+
+### Steg 3 — Deploy
+
+```
+npm run deploy:production
+```
+
+### Steg 4 — Rök-test
+
+- `/flen-varldsorkester` öppnat direkt (jämfört med inkognitofönster): första klick någonstans → ljudet tänds. På efterföljande omladdningar samma sak.
+- `/jazz-world-music-club` (eller dess slug) — titel-label med orange ram, "Din lokala scen för fantastisk jazz och världsmusik." står som body-lead under hero, inte som överlagring.
+- `/admin` → Nyheter → Skapa Nyhet → välj target *Flen Världsorkester / Musaik Projektet* → spara. Öppna `/flen-varldsorkester/musaik-projektet` → ska visa nyheten. Öppna `/flen-varldsorkester` → ska INTE visa den.
+- `/admin` → Sektioner → Flen Världsorkester → Tilldelad media → "Ladda upp bild" → filinput'en visar bara svenska, ingen "Выберите файл" mer.
+- `/admin` → ändra Fäst-överst på en bild → spara → andra tidigare-fästa items i samma sektion ska automatiskt vara avpinnade.
+- 390px: ingen sidled-scroll.
 
 ---
 

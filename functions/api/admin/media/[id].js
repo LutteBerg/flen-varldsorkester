@@ -4,6 +4,7 @@
 import { json, error, noContent } from '../../../lib/response.js';
 import { requireDb, nowIso, wrap } from '../../../lib/db.js';
 import { normalizeYouTubeUrl, YOUTUBE_INVALID_MESSAGE } from '../../../lib/youtube.js';
+import { unpinSiblings } from '../media.js';
 
 export const onRequestPut = wrap(async ({ params, request, env }) => {
   const db = requireDb(env);
@@ -66,6 +67,13 @@ export const onRequestPut = wrap(async ({ params, request, env }) => {
   bindings.push(id);
 
   await db.prepare(`UPDATE media_items SET ${setClauses.join(', ')} WHERE id = ?${i}`).bind(...bindings).run();
+
+  // If this edit pinned the item, demote every other pinned item with
+  // the same parent so there's at most one pinned (hero) item per page.
+  if (updates.pinned === 1) {
+    await unpinSiblings(db, id, existing.section_id, existing.child_page_id);
+  }
+
   const row = await db.prepare(`SELECT * FROM media_items WHERE id = ?1`).bind(id).first();
   return json({ ok: true, media: row });
 });

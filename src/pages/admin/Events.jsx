@@ -34,7 +34,28 @@ export default function Events() {
     setError('');
     setIsNew(true);
     const dateStr = new Date().toISOString().split('T')[0];
-    setEditingItem({ title: '', date: dateStr, time: '18:00', location: 'Amazon, Flen', description: '', sectionId: '', status: 'draft', image: '' });
+    setEditingItem({ title: '', date: dateStr, time: '18:00', location: 'Amazon, Flen', description: '', sectionId: '', childPageId: '', status: 'draft', image: '' });
+  }
+  // Same "section OR child page" picker as News.jsx.
+  function targetValue(item) {
+    if (item.childPageId) return `child:${item.childPageId}`;
+    if (item.sectionId)   return `sec:${item.sectionId}`;
+    return '';
+  }
+  function setTarget(value) {
+    if (!value) {
+      handleChange('sectionId',   '');
+      handleChange('childPageId', '');
+      return;
+    }
+    const [kind, id] = value.split(':');
+    if (kind === 'child') {
+      handleChange('sectionId',   '');
+      handleChange('childPageId', id);
+    } else {
+      handleChange('sectionId',   id);
+      handleChange('childPageId', '');
+    }
   }
   async function handleDelete(id) {
     if (!window.confirm('Är du säker på att du vill radera detta evenemang?')) return;
@@ -57,7 +78,8 @@ export default function Events() {
         time: editingItem.time,
         location: editingItem.location,
         description: editingItem.description,
-        sectionId: editingItem.sectionId || null,
+        sectionId:   editingItem.childPageId ? null : (editingItem.sectionId || null),
+        childPageId: editingItem.childPageId || null,
         status: editingItem.status,
         image: editingItem.image,
       };
@@ -111,11 +133,27 @@ export default function Events() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Relaterad Sektion (frivilligt)</label>
-            <select className="form-control" value={editingItem.sectionId || ''} onChange={(e) => handleChange('sectionId', e.target.value)}>
-              <option value="">Ingen specifik sektion</option>
-              {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+            <label className="form-label">Visas på sida (välj sektion eller undersida)</label>
+            <select
+              className="form-control"
+              value={targetValue(editingItem)}
+              onChange={(e) => setTarget(e.target.value)}
+            >
+              <option value="">Ingen specifik</option>
+              {sections.map(s => (
+                <React.Fragment key={s.id}>
+                  <option value={`sec:${s.id}`}>{s.title}</option>
+                  {(s.childPages || []).map(cp => (
+                    <option key={cp.id} value={`child:${cp.id}`}>
+                      &nbsp;&nbsp;↳ {s.title} / {cp.title}
+                    </option>
+                  ))}
+                </React.Fragment>
+              ))}
             </select>
+            <p style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4}}>
+              T.ex. <em>Flen Världsorkester / Musaik Projektet</em> — då visas evenemanget endast på Musaik-sidan.
+            </p>
           </div>
 
           <div className="form-group">

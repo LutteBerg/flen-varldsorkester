@@ -81,6 +81,10 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     title: n.title,
     date: n.date,
     sectionId: n.section_id,
+    // Migration 0004 adds child_page_id to news/events. When this column
+    // is populated the row "belongs to" that child page and not the
+    // section directly. The public site filters accordingly.
+    childPageId: n.child_page_id || null,
     excerpt: n.excerpt || '',
     body: n.body || '',
     image: n.image || '',
@@ -95,6 +99,7 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     location: e.location || '',
     description: e.description || '',
     sectionId: e.section_id,
+    childPageId: e.child_page_id || null,
     image: e.image || '',
     status: e.status,
   }));

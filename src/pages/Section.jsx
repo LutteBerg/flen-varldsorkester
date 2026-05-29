@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
-import VideoEmbed from '../components/VideoEmbed';
 import VideoModal from '../components/VideoModal';
 import MediaTabs from '../components/MediaTabs';
 import MediaPreviewGrid from '../components/MediaPreviewGrid';
@@ -11,8 +10,11 @@ import HeroVideoSection from '../components/HeroVideoSection';
 import MusaikFeatureCard from '../components/MusaikFeatureCard';
 import './Section.css';
 
-// Slugs that should render the new HeroVideoSection at the top.
-const HERO_VIDEO_SLUGS = new Set(['flen-varldsorkester']);
+// Every section page now uses HeroVideoSection — it handles both the
+// video-hero case (pinned/first video → looping background) and the
+// image-fallback case (cover image → still hero) inside the same
+// component, so Jazz / Målarateljen / Textilverkstad get the same
+// orange-bordered title label and body-lead layout as FVO.
 
 export default function Section() {
   const { slug } = useParams();
@@ -51,10 +53,15 @@ export default function Section() {
   const sortedVideos = [...(section.videos || [])].sort(byPinnedThenOrder);
   const sortedImages = [...(section.galleryImages || [])].sort(byPinnedThenOrder);
   const pinnedVideo = sortedVideos.find(v => v.pinned);
-  const isVideoHero = section.heroMediaType === 'video' && pinnedVideo;
 
-  const useNewHero = HERO_VIDEO_SLUGS.has(slug);
-  const heroVideo = useNewHero ? (pinnedVideo || sortedVideos[0] || null) : null;
+  // Always use HeroVideoSection. If a pinned video exists OR section is
+  // marked as video-hero, prefer the video; otherwise the cover image
+  // becomes the fallback background.
+  const useNewHero = true;
+  const heroVideo = pinnedVideo
+    || (section.heroMediaType === 'video' ? sortedVideos[0] : null);
+  // Kept for downstream layout flags (e.g. full-bleed adjustments).
+  const isVideoHero = !!heroVideo;
 
   const previewEvents = events.slice(0, 3);
   const previewNews = news.slice(0, 2);
@@ -72,52 +79,12 @@ export default function Section() {
   return (
     <div className={`section-page animate-fade-in${hasFullBleedHero ? ' section-page--has-hero-video' : ''}`}>
 
-      {useNewHero ? (
-        <HeroVideoSection
-          video={heroVideo}
-          title={section.title}
-          backTo={{ to: '/', label: 'Hem' }}
-          fallbackImage={section.coverImage}
-        />
-      ) : (
-        <section className={`section-hero ${isVideoHero ? 'has-video-bg' : ''}`}>
-          {isVideoHero && (
-            <VideoEmbed
-              videoId={pinnedVideo.videoId}
-              url={pinnedVideo.url}
-              embedUrl={pinnedVideo.embedUrl}
-              mode="background"
-              title="Bakgrundsvideo"
-            />
-          )}
-
-          <div className="container hero-container" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="hero-text-side">
-              <Link to="/" className="back-link">
-                <ArrowLeft size={20} />
-                <span className="text-uppercase">Hem</span>
-              </Link>
-              <h1 className="section-title">{section.title}</h1>
-              <p className="section-lead">{section.shortDescription}</p>
-            </div>
-            {!isVideoHero && (
-              <div className="hero-visual-side">
-                {section.coverImage ? (
-                  <img
-                    src={section.coverImage}
-                    alt={section.title}
-                    className="img-documentary"
-                    loading="eager"
-                    decoding="sync"
-                  />
-                ) : (
-                  <div className="accent-block"></div>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      <HeroVideoSection
+        video={heroVideo}
+        title={section.title}
+        backTo={{ to: '/', label: 'Hem' }}
+        fallbackImage={section.coverImage}
+      />
 
       <section className="section-content-grid container">
         <div className="main-col">

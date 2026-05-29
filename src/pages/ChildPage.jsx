@@ -51,12 +51,14 @@ export default function ChildPage() {
         setChildPage(c);
       }
 
-      // Child pages share the parent section's news + events. News and
-      // events are stored per-section in D1 (no child_page_id column),
-      // so we surface the same list here that the parent section shows.
-      if (s) {
-        const n = await contentRepository.getNewsBySection(s.id);
-        const e = await contentRepository.getEventsBySection(s.id);
+      // After migration 0004, news and events can be assigned directly
+      // to a child page. We fetch ONLY child-page-scoped items here, so
+      // FVO's section-level news doesn't leak onto Musaik (admin picks
+      // the target per item: section OR child page).
+      const child = s && s.childPages ? s.childPages.find(p => p.slug === childSlug) : null;
+      if (child) {
+        const n = await contentRepository.getNewsByChildPage(child.id);
+        const e = await contentRepository.getEventsByChildPage(child.id);
         setNews(n.filter(item => item.status === 'published'));
         setEvents(e.filter(item => item.status === 'published'));
       }

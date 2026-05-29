@@ -51,6 +51,8 @@ export const onRequestPost = wrap(async ({ request, env }) => {
   const ts = nowIso();
   const status = ['published', 'draft'].includes(body.status) ? body.status : 'published';
 
+  const pinned = body.pinned ? 1 : 0;
+
   await db.prepare(
     `INSERT INTO media_items (
        id, section_id, child_page_id, type, url, video_id, embed_url,
@@ -59,15 +61,40 @@ export const onRequestPost = wrap(async ({ request, env }) => {
   ).bind(
     id, section_id, child_page_id, type, url, video_id, embed_url,
     stringOr(body.title, ''), stringOr(body.caption, ''), stringOr(body.alt, ''),
-    body.pinned ? 1 : 0,
+    pinned,
     Number.isInteger(body.sortOrder) ? body.sortOrder : 0,
     status, stringOr(body.context, ''),
     ts, ts
   ).run();
 
+  // Single-pinned-per-parent rule: if this new item was pinned, demote
+  // every other pinned item in the same parent (section OR child page).
+  // The UI presents pinning as a "set the hero" choice — only one item
+  // can be hero at a time, regardless of type.
+  if (pinned) {
+    await unpinSiblings(db, id, section_id, child_page_id);
+  }
+
   const row = await db.prepare(`SELECT * FROM media_items WHERE id = ?1`).bind(id).first();
   return json({ ok: true, media: row });
 });
+
+// Unpins every media_items row that shares the same parent (section_id OR
+// child_page_id) as the row identified by `keepId`. Used by both POST and
+// PUT to enforce a single hero per page.
+export async function unpinSiblings(db, keepId, sectionId, childPageId) {
+  if (sectionId) {
+    await db.prepare(
+      `UPDATE media_items SET pinned = 0
+        WHERE pinned = 1 AND id != ?1 AND section_id = ?2 AND child_page_id IS NULL`
+    ).bind(keepId, sectionId).run();
+  } else if (childPageId) {
+    await db.prepare(
+      `UPDATE media_items SET pinned = 0
+        WHERE pinned = 1 AND id != ?1 AND child_page_id = ?2 AND section_id IS NULL`
+    ).bind(keepId, childPageId).run();
+  }
+}
 
 function stringOr(v, fallback) {
   return typeof v === 'string' ? v : fallback;

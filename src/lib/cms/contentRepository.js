@@ -57,14 +57,34 @@ export const contentRepository = {
     return adapter.uploadMedia(file, meta);
   },
 
-  // Section-scoped helpers (used by Section/NewsList/EventList pages).
+  // Section-scoped helpers. After migration 0004, items can also belong
+  // to a child page (childPageId != null). Those are intentionally
+  // EXCLUDED from the section list so that, e.g., a Musaik-specific
+  // news item doesn't bubble up to /flen-varldsorkester.
   getNewsBySection: async (sectionId) => {
     const all = await adapter.getNews();
-    return all.filter(n => n.sectionId === sectionId || n.sectionId === null);
+    return all.filter(n =>
+      !n.childPageId &&
+      (n.sectionId === sectionId || n.sectionId === null)
+    );
   },
   getEventsBySection: async (sectionId) => {
     const all = await adapter.getEvents();
-    return all.filter(e => e.sectionId === sectionId || e.sectionId === null);
+    return all.filter(e =>
+      !e.childPageId &&
+      (e.sectionId === sectionId || e.sectionId === null)
+    );
+  },
+  // Child-page-scoped helpers. Items are matched strictly by childPageId
+  // — section_id is derived from the child page server-side, so we
+  // don't need to filter by section here.
+  getNewsByChildPage: async (childPageId) => {
+    const all = await adapter.getNews();
+    return all.filter(n => n.childPageId === childPageId);
+  },
+  getEventsByChildPage: async (childPageId) => {
+    const all = await adapter.getEvents();
+    return all.filter(e => e.childPageId === childPageId);
   },
 
   // Mode flag for UI banners ("Sparar lokalt — read-only" in dev).
