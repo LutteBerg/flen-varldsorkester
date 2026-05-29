@@ -7,7 +7,8 @@ Det här stycket är en levande sammanfattning ovanpå den ursprungliga uppgifts
 | 1 | Audit av media, R2, hero, prestanda | ✅ Klar | Rapport levererad. Inget mer audit-arbete behövs. |
 | 2 | Bilduppladdning i admin (R2) | ✅ Klar | `MEDIA_BUCKET` binding, `/api/admin/upload`, `/media/<key>`-routen, `MediaManager.jsx`. Migration 0003 körd. Bucket finns. |
 | 3 | Redigera media-titel/caption utan att radera | ✅ Klar | `PUT /api/admin/media/:id` + `EditMediaForm`. Bekräftat fungerar. |
-| 4 | Hero-video + titel-layout | ✅ Klar (efter dagens uppdatering) | Delad `HeroVideoSection`, botten-ribbon, subtitel under videon. **Idag:** ljudet skickas via `postMessage` på varje besök (scroll inräknat). Den mörka "afterbanden" under videon togs bort efter Janes feedback — den syntes som en separat horisontal randighet, vilket inte var avsikten. Befintliga botten-ribbon under titeln räcker som "podlozhka". |
+| 4 | Hero-video + titel-layout | ✅ Klar (efter dagens uppdatering) | Delad `HeroVideoSection`. **Idag, iteration 2:** (a) Auto-unmute har nu BÅDA strategierna: postMessage + iframe-remount med `mute=0` på första muted-gesten. Aktiveringar enligt HTML-spec (click / pointerdown / touchstart / keydown). `scroll`/`wheel` lyssnas också men kommer inte att starta ljud — webbläsares autoplay-policy tillåter inte ljud från scroll, det är ingen kodbugg, "Slå på ljudet"-knappen är fallback. (b) Botten-griböndet borttaget; titeln är nu en egen "label" (`.hero-video-title`) med svart fyllning + orange ram + vit text. (c) Tidigare "afterband" är borta. |
+| 4.2 | Nyheter + evenemang på child-page | ✅ Klar (idag) | `ChildPage.jsx` hämtar och visar förälder-sektionens publicerade nyheter och evenemang under brödtexten. Tidigare fanns dessa bara på `/flen-varldsorkester`, inte på `/flen-varldsorkester/musaik-projektet`. |
 | 4.1 | Enhetligt galleri (Video/Foto-flikar) på child-pages | ✅ Klar (idag) | `ChildPage.jsx` använder nu `MediaTabs` + `MediaPreviewGrid` + `VideoModal`. Fixar bonusbuggen att videos uppladdade till t.ex. Musaik inte syntes någonstans. |
 | 5 | Mobil / responsiv | ✅ Klar | `overflow-x: clip`, `clamp()`-titlar, fluid section-padding. Behöver bara verifieras på 390px efter omdeploy. |
 | 6 | Prestanda | ✅ Klar | Bilder ~94% mindre (`scripts/optimize-images.mjs`), tumnaglar istället för iframes i galleri, lazy-loading. Hero-iframe är `eager` (rätt — den ligger ovan fold). |
@@ -20,7 +21,7 @@ Det här stycket är en levande sammanfattning ovanpå den ursprungliga uppgifts
 3. Commit:
    ```
    git add src/components/HeroVideoSection.jsx src/components/HeroVideoSection.css src/pages/ChildPage.jsx Plan.md
-   git commit -m "fix(hero): postMessage unmute on every visit, dark afterband below video; feat(child-page): unified Video/Foto tabs gallery"
+   git commit -m "fix(hero): bulletproof unmute on first click + remove afterband; style(hero): orange-bordered title label; feat(child-page): news/events + Video/Foto tabs gallery"
    git push origin main
    ```
 4. Deploy:

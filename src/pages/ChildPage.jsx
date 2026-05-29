@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
 import HeroVideoSection from '../components/HeroVideoSection';
@@ -27,6 +27,8 @@ export default function ChildPage() {
   const [section, setSection] = useState(null);
   const [childPage, setChildPage] = useState(null);
   const [globalContent, setGlobalContent] = useState(null);
+  const [news, setNews] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   // Phase 4.1: unify gallery presentation with Section.jsx — same tabs and
   // modal lightbox as the parent section page so child pages don't lose
@@ -48,6 +50,17 @@ export default function ChildPage() {
         const c = s.childPages.find(p => p.slug === childSlug);
         setChildPage(c);
       }
+
+      // Child pages share the parent section's news + events. News and
+      // events are stored per-section in D1 (no child_page_id column),
+      // so we surface the same list here that the parent section shows.
+      if (s) {
+        const n = await contentRepository.getNewsBySection(s.id);
+        const e = await contentRepository.getEventsBySection(s.id);
+        setNews(n.filter(item => item.status === 'published'));
+        setEvents(e.filter(item => item.status === 'published'));
+      }
+
       setLoading(false);
     }
     fetchData();
@@ -70,6 +83,9 @@ export default function ChildPage() {
     : (mediaTab === 'video' && !hasVideos && hasImages)
       ? 'bilder'
       : mediaTab;
+
+  const previewNews   = news.slice(0, 2);
+  const previewEvents = events.slice(0, 3);
 
   return (
     <div className={`section-page animate-fade-in${hasHeroVideo ? ' section-page--has-hero-video' : ''}`}>
@@ -100,6 +116,59 @@ export default function ChildPage() {
         <div className="prose">
           <p>{childPage.body}</p>
         </div>
+
+        {/* News for the parent section. Same look as the parent
+            Section.jsx news block, kept as a stacked card list since
+            child pages have no sidebar. */}
+        {previewNews.length > 0 && (
+          <div className="news-section">
+            <h2 className="block-title">Senaste Nyheterna</h2>
+            <div className="news-list">
+              {previewNews.map(n => (
+                <article key={n.id} className="designed-news-card">
+                  <div className="news-date-block">
+                    <span className="date-month">{new Date(n.date).toLocaleString('sv-SE', { month: 'short' }).toUpperCase()}</span>
+                    <span className="date-day">{new Date(n.date).getDate()}</span>
+                  </div>
+                  <div className="news-content">
+                    <h3 className="news-title" style={{fontSize: '1.25rem'}}>{n.title}</h3>
+                    <p style={{fontSize: '0.95rem'}}>{n.excerpt}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div style={{marginTop: '24px'}}>
+              <Link to={`/${slug}/nyheter`} className="btn-secondary">Visa alla nyheter</Link>
+            </div>
+          </div>
+        )}
+
+        {/* Events for the parent section, same card style as the parent
+            Section.jsx sidebar. */}
+        {previewEvents.length > 0 && (
+          <div className="events-section" style={{ marginTop: 48 }}>
+            <h2 className="block-title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Evenemang</h2>
+            <div className="events-list">
+              {previewEvents.map(e => (
+                <div key={e.id} className="designed-event-card">
+                  <div className="event-stripe"></div>
+                  <div className="event-content" style={{padding: '16px'}}>
+                    <h4 className="event-title" style={{fontSize: '1.1rem'}}>{e.title}</h4>
+                    <div className="event-meta" style={{gap: '8px'}}>
+                      <div className="meta-item">
+                        <Calendar size={14} />
+                        <span style={{fontSize: '0.85rem'}}>{e.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop: '24px'}}>
+              <Link to={`/${slug}/evenemang`} className="btn-secondary">Visa alla evenemang</Link>
+            </div>
+          </div>
+        )}
 
       </div>
 

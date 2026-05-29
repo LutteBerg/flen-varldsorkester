@@ -45,23 +45,25 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     setReloadKey((k) => k + 1);
   }, [video?.videoId, video?.embedUrl]);
 
-  // Auto-unmute on ANY user gesture, every time the page is visited.
+  // Auto-unmute on user gesture — belt-and-braces, every visit.
   //
-  // Earlier we used `once: true` + a `tried` flag and remounted the iframe
-  // with `mute=0`. That worked on the very first visit but failed on repeat
-  // visits because the URL-remount strategy depends on YouTube honouring
-  // `mute=0&autoplay=1` within a freshly-arrived user activation, which a
-  // back/forward-cache restore does NOT provide.
+  // We use TWO independent paths because each one has a failure mode:
+  //   (a) postMessage `unMute` to the loaded YouTube player. Works at any
+  //       time AFTER the iframe has fully loaded. Fails silently if the
+  //       gesture arrives before the player is ready.
+  //   (b) Remount the iframe with `mute=0`. Works regardless of player
+  //       ready state — the new iframe always loads cleanly. The trade-off
+  //       is a brief reload flicker.
   //
-  // The robust path is what `BackgroundVideoIframe` already does: keep the
-  // iframe mounted with `mute=1&autoplay=1` (it actually plays), and on any
-  // gesture postMessage `unMute` + `setVolume` + `playVideo` to the YouTube
-  // player. This works on every visit, repeated visits, bfcache restores,
-  // and reload — the gesture is what matters, not the URL.
+  // On the first muted gesture we do BOTH. If postMessage wins, the iframe
+  // unmutes instantly; if it loses (too early), the remount catches it.
+  // Repeated gestures after we're already unmuted are no-ops.
   //
-  // Listeners are not `once` and not removed after a single fire — repeated
-  // gestures keep re-asserting unmute, which is harmless if already unmuted
-  // and self-healing if a previous attempt was lost to a navigation.
+  // Browser autoplay policy note:
+  //   `scroll` and `wheel` events are NOT user activations per the HTML
+  //   spec — browsers will not allow audio to start from a scroll alone,
+  //   no matter what we do. The visible "Slå på ljudet" pill stays as
+  //   the fallback for users who never click.
   useEffect(() => {
     if (!video) return;
 
@@ -76,21 +78,31 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     };
 
     const handleGesture = () => {
-      // Reflect the unmute in our local UI (icon flips, "Slå på ljudet"
-      // button disappears) only if we were actually muted. We don't
-      // bump reloadKey — keeping the iframe mounted is the whole point.
-      if (mutedRef.current) setMuted(false);
+      if (!mutedRef.current) {
+        // Already unmuted — still re-assert in case YouTube dropped state
+        // on bfcache restore. Cheap to send.
+        postUnmute();
+        return;
+      }
+      // First muted gesture: do both paths.
       postUnmute();
+      setMuted(false);
+      setReloadKey((k) => k + 1);
     };
 
-    const events = ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll', 'wheel'];
+    // Only events that count as user activations per HTML spec are
+    // *guaranteed* to let YouTube unmute. We also listen to scroll/wheel
+    // as a courtesy — postMessage will run, and on some browsers/MEI
+    // profiles it succeeds. On most browsers scroll alone won't, and
+    // that's a browser policy we cannot override.
+    const events = ['click', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'keydown', 'keyup', 'scroll', 'wheel'];
     const opts = { capture: true, passive: true };
     events.forEach((ev) => document.addEventListener(ev, handleGesture, opts));
 
     return () => {
       events.forEach((ev) => document.removeEventListener(ev, handleGesture, true));
     };
-  }, [video, reloadKey]);
+  }, [video]);
 
   if (!video) {
     return (

@@ -55,18 +55,12 @@
   background-position: center;
 }
 
+/* The bottom gradient ribbon is no longer used. The title now sits
+   inside its own pill-shaped label (.hero-video-title) so the video
+   stays fully visible and the title is clearly framed.
+   Keeping the class as a no-op so any legacy markup doesn't break. */
 .hero-video-ribbon {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0)    0%,
-    rgba(0, 0, 0, 0)    55%,
-    rgba(0, 0, 0, 0.45) 78%,
-    rgba(0, 0, 0, 0.78) 100%
-  );
-  pointer-events: none;
+  display: none;
 }
 
 .hero-video-backwrap {
@@ -103,26 +97,45 @@
 .hero-video-content {
   position: relative;
   z-index: 3;
-  padding: 18px 32px 26px;
+  /* Pull the title label up from the very bottom edge of the video so
+     it doesn't visually crash into the seam with the body content. */
+  padding: 18px 32px clamp(28px, 6vw, 60px);
   width: 100%;
 }
 
 @media (min-width: 768px) {
   .hero-video-content {
-    padding: 24px 32px 34px;
+    padding: 24px 32px clamp(40px, 5vw, 72px);
   }
 }
 
+/* Title as a contained "label" framed by an orange border on top of
+   the video. Inline-block so the box only hugs the text. Padding makes
+   the orange border feel like a frame, not a thin underline. */
 .hero-video-title {
+  display: inline-block;
   font-family: var(--font-heading);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: white;
-  font-size: clamp(1.7rem, 4.5vw, 3rem);
-  line-height: 1.08;
+  font-size: clamp(1.5rem, 4vw, 2.6rem);
+  line-height: 1.1;
   margin: 0;
   overflow-wrap: anywhere;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.86);
+  border: 2px solid var(--color-orange);
+  border-radius: 6px;
+  padding: 10px 18px;
+  /* Keep the label readable even on a bright frame of the video. */
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .hero-video-title {
+    padding: 12px 22px;
+    border-width: 3px;
+  }
 }
 
 .hero-video-controls {
