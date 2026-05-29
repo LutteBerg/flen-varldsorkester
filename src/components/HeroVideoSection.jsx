@@ -211,10 +211,6 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
         </button>
       </div>
     </section>
-    {/* Dark "afterband" below the hero so the video doesn't sit pressed
-        against the cream/white body content. Same dark colour as the hero
-        bottom-ribbon — visually reads as a soft fade out of the video. */}
-    <div className={`hero-video-afterband hero-video-afterband--${variant}`} aria-hidden="true" />
     </>
   );
 }
