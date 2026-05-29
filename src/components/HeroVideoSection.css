@@ -193,3 +193,34 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-video-bg iframe { display: none; }
 }
+
+/* Dark band that sits immediately below the hero video. Without it the
+   bottom of the video (which already fades to dark via .hero-video-ribbon)
+   crashes straight into the cream/white body background, which looks
+   abrupt. A thin solid band + soft gradient does the soft-out. */
+.hero-video-afterband {
+  width: 100%;
+  height: clamp(40px, 6vw, 72px);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.85) 55%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+  /* Pull the band up so it overlaps with the hero's bottom ribbon and
+     continues its darkness, rather than starting a fresh dark stripe. */
+  margin-top: -1px;
+}
+
+/* On a child page (variant="light"), the surrounding page is white, so we
+   keep the band but lighten the tail so it doesn't sit as a hard dark
+   stripe on white. */
+.hero-video-afterband--light {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.6)  45%,
+    rgba(0, 0, 0, 0)    100%
+  );
+}

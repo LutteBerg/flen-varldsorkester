@@ -32,38 +32,65 @@ import './HeroVideoSection.css';
 
 export default function HeroVideoSection({ video, title, backTo, fallbackImage, variant = 'dark' }) {
   const [muted, setMuted] = useState(true);
-  const [autoUnmuteTried, setAutoUnmuteTried] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const iframeRef = useRef(null);
+  const mutedRef = useRef(true);
+  mutedRef.current = muted;
 
   // If the parent swaps to a different video, reset local controls.
   useEffect(() => {
     setMuted(true);
     setPlaying(true);
-    setAutoUnmuteTried(false);
     setReloadKey((k) => k + 1);
   }, [video?.videoId, video?.embedUrl]);
 
-  // Auto-unmute on first user gesture.
+  // Auto-unmute on ANY user gesture, every time the page is visited.
+  //
+  // Earlier we used `once: true` + a `tried` flag and remounted the iframe
+  // with `mute=0`. That worked on the very first visit but failed on repeat
+  // visits because the URL-remount strategy depends on YouTube honouring
+  // `mute=0&autoplay=1` within a freshly-arrived user activation, which a
+  // back/forward-cache restore does NOT provide.
+  //
+  // The robust path is what `BackgroundVideoIframe` already does: keep the
+  // iframe mounted with `mute=1&autoplay=1` (it actually plays), and on any
+  // gesture postMessage `unMute` + `setVolume` + `playVideo` to the YouTube
+  // player. This works on every visit, repeated visits, bfcache restores,
+  // and reload — the gesture is what matters, not the URL.
+  //
+  // Listeners are not `once` and not removed after a single fire — repeated
+  // gestures keep re-asserting unmute, which is harmless if already unmuted
+  // and self-healing if a previous attempt was lost to a navigation.
   useEffect(() => {
-    if (autoUnmuteTried || !muted || !video) return;
+    if (!video) return;
 
-    const handleGesture = () => {
-      setAutoUnmuteTried(true);
-      setMuted(false);
-      setPlaying(true);
-      setReloadKey((k) => k + 1);
+    const postUnmute = () => {
+      const win = iframeRef.current?.contentWindow;
+      if (!win) return;
+      try {
+        win.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: '' }), '*');
+        win.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
+        win.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+      } catch { /* cross-origin postMessage must not throw, but be safe */ }
     };
 
-    const events = ['pointerdown', 'touchstart', 'click', 'keydown'];
-    const opts = { capture: true, passive: true, once: true };
+    const handleGesture = () => {
+      // Reflect the unmute in our local UI (icon flips, "Slå på ljudet"
+      // button disappears) only if we were actually muted. We don't
+      // bump reloadKey — keeping the iframe mounted is the whole point.
+      if (mutedRef.current) setMuted(false);
+      postUnmute();
+    };
+
+    const events = ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll', 'wheel'];
+    const opts = { capture: true, passive: true };
     events.forEach((ev) => document.addEventListener(ev, handleGesture, opts));
 
     return () => {
       events.forEach((ev) => document.removeEventListener(ev, handleGesture, true));
     };
-  }, [autoUnmuteTried, muted, video]);
+  }, [video, reloadKey]);
 
   if (!video) {
     return (
@@ -127,6 +154,7 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
   }
 
   return (
+    <>
     <section className={`hero-video-section hero-video-section--${variant}`}>
       <div className="hero-video-bg" aria-hidden="true">
         <iframe
@@ -183,6 +211,11 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
         </button>
       </div>
     </section>
+    {/* Dark "afterband" below the hero so the video doesn't sit pressed
+        against the cream/white body content. Same dark colour as the hero
+        bottom-ribbon — visually reads as a soft fade out of the video. */}
+    <div className={`hero-video-afterband hero-video-afterband--${variant}`} aria-hidden="true" />
+    </>
   );
 }
 

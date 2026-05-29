@@ -4,6 +4,10 @@ import { ArrowLeft } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
 import SocialCTA from '../components/SocialCTA';
 import HeroVideoSection from '../components/HeroVideoSection';
+import MediaTabs from '../components/MediaTabs';
+import MediaPreviewGrid from '../components/MediaPreviewGrid';
+import VideoModal from '../components/VideoModal';
+import '../pages/Section.css';
 
 // Child-page renderer (e.g. /flen-varldsorkester/musaik-projektet).
 //
@@ -24,6 +28,12 @@ export default function ChildPage() {
   const [childPage, setChildPage] = useState(null);
   const [globalContent, setGlobalContent] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Phase 4.1: unify gallery presentation with Section.jsx — same tabs and
+  // modal lightbox as the parent section page so child pages don't lose
+  // uploaded videos and feel visually different.
+  const [mediaTab, setMediaTab] = useState('bilder');
+  const [activeVideo, setActiveVideo] = useState(null);
+  const [activeImage, setActiveImage] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -47,12 +57,19 @@ export default function ChildPage() {
   if (!section || !childPage) return <div className="container" style={{padding: '80px 32px'}}>Sidan hittades inte.</div>;
 
   // Pinned-first; API already sorts but normalize again for safety.
-  const videos = [...(childPage.videos || [])].sort((a, b) => {
-    if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-    return (a.sortOrder || 0) - (b.sortOrder || 0);
-  });
+  const videos = [...(childPage.videos || [])].sort(byPinnedThenOrder);
+  const images = [...(childPage.galleryImages || [])].sort(byPinnedThenOrder);
   const leadVideo = videos[0];
   const hasHeroVideo = !!leadVideo;
+
+  const hasImages = images.length > 0;
+  const hasVideos = videos.length > 0;
+  // Auto-switch the tab if the chosen one has no content but the other does.
+  const effectiveTab = (mediaTab === 'bilder' && !hasImages && hasVideos)
+    ? 'video'
+    : (mediaTab === 'video' && !hasVideos && hasImages)
+      ? 'bilder'
+      : mediaTab;
 
   return (
     <div className={`section-page animate-fade-in${hasHeroVideo ? ' section-page--has-hero-video' : ''}`}>
@@ -84,24 +101,70 @@ export default function ChildPage() {
           <p>{childPage.body}</p>
         </div>
 
-        {childPage.galleryImages && childPage.galleryImages.length > 0 && (
-          <div className="gallery-section" style={{marginTop: '60px', marginBottom: '60px'}}>
-            <h2 className="block-title">Bildgalleri</h2>
-            <div className="gallery-grid">
-              {childPage.galleryImages.map((img) => (
-                <div key={img.id} className="gallery-item">
-                  <img src={img.src} alt={img.alt || img.caption || "Galleri bild"} loading="lazy" />
-                  {img.caption && <div className="gallery-caption">{img.caption}</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
       </div>
+
+      {/* Unified gallery — same Video/Foto tabs as the parent section. Shows
+          every uploaded image AND every uploaded video for this child page,
+          including the hero video itself so it can be re-opened in the
+          modal. Fixes the bug where videos uploaded to a child page (e.g.
+          Musaik) appeared nowhere on the public site. */}
+      {(hasImages || hasVideos) && (
+        <section className="container">
+          <div className="media-section">
+            <div className="media-section-head">
+              <h2 className="block-title" style={{ marginBottom: 0 }}>Galleri</h2>
+              <MediaTabs
+                activeTab={effectiveTab}
+                onChange={setMediaTab}
+                hasImages={hasImages}
+                hasVideos={hasVideos}
+              />
+            </div>
+
+            {effectiveTab === 'bilder' && (
+              <MediaPreviewGrid
+                items={images}
+                type="bilder"
+                maxItems={100}
+                onImageClick={setActiveImage}
+              />
+            )}
+
+            {effectiveTab === 'video' && (
+              <MediaPreviewGrid
+                items={videos}
+                type="video"
+                maxItems={100}
+                onVideoClick={setActiveVideo}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      <VideoModal
+        isOpen={!!activeVideo}
+        onClose={() => setActiveVideo(null)}
+        videoId={activeVideo?.videoId}
+        embedUrl={activeVideo?.embedUrl}
+        url={activeVideo?.url}
+        title={activeVideo?.title}
+      />
+      <VideoModal
+        isOpen={!!activeImage}
+        onClose={() => setActiveImage(null)}
+        image={activeImage ? { src: activeImage.src, alt: activeImage.alt || activeImage.caption } : null}
+        title={activeImage?.caption}
+      />
+
       <div style={{ marginTop: '60px' }}>
         <SocialCTA globalContent={globalContent} />
       </div>
     </div>
   );
+}
+
+function byPinnedThenOrder(a, b) {
+  if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+  return (a.sortOrder || 0) - (b.sortOrder || 0);
 }
