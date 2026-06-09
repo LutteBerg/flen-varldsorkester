@@ -306,6 +306,24 @@
   transition: transform 0.3s ease;
 }
 
+/* Image tiles that open the lightbox are <button>s — strip the native chrome
+   and let them fill the grid cell exactly like the old <div>. */
+.gallery-item-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  font: inherit;
+  color: inherit;
+}
+
+.gallery-item-button:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
+}
+
 .gallery-item:hover {
   transform: translateY(-4px);
 }
@@ -452,8 +470,38 @@
   margin-top: 4px;
 }
 
+.news-card-thumb {
+  width: 140px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.news-card-thumb img {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
 .news-content {
   padding: 24px 32px;
+}
+
+.news-read-more {
+  display: inline-block;
+  margin-top: 14px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-orange);
+}
+
+@media (max-width: 640px) {
+  .news-card-thumb {
+    display: none;
+  }
 }
 
 .news-title {
@@ -511,6 +559,30 @@
 .designed-event-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+}
+
+/* Clickable cards (event -> detail page, news -> modal). These keep the
+   visual design of the card while making the whole surface interactive. */
+.event-card-link,
+.news-card-button {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+}
+
+.news-card-button {
+  background: none;
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 0;
+}
+
+.event-card-link:focus-visible,
+.news-card-button:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
 }
 
 .event-stripe {

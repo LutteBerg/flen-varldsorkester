@@ -87,6 +87,15 @@
   justify-content: center;
 }
 
+/* Zoomed state: let the wrapper scroll so an over-sized (original-resolution)
+   image can be panned in both directions. */
+.video-modal-image-wrap.is-zoomed {
+  overflow: auto;
+  max-height: calc(100vh - 80px);
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
 .video-modal-image {
   max-width: 100%;
   max-height: calc(100vh - 120px);
@@ -94,6 +103,17 @@
   height: auto;
   display: block;
   object-fit: contain;
+  cursor: zoom-in;
+}
+
+/* Original size — the image is shown at its natural pixel dimensions and the
+   wrapper above provides scrollbars. */
+.video-modal-image--zoomed {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+  cursor: zoom-out;
 }
 
 .video-modal-caption {

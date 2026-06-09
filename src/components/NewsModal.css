@@ -1,0 +1,119 @@
+.news-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.82);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  animation: news-modal-fade 0.18s ease-out;
+}
+
+@keyframes news-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.news-modal-dialog {
+  position: relative;
+  width: min(760px, 100%);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  margin: auto;
+  overflow: hidden;
+}
+
+.news-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text-main);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  z-index: 2;
+}
+
+.news-modal-close:hover,
+.news-modal-close:focus {
+  background: var(--color-orange);
+  color: #fff;
+  outline: none;
+}
+
+.news-modal-image {
+  width: 100%;
+  max-height: 420px;
+  overflow: hidden;
+  background: #000;
+}
+
+.news-modal-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: cover;
+}
+
+.news-modal-body {
+  padding: clamp(20px, 4vw, 36px);
+}
+
+.news-modal-date {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-orange);
+  margin-bottom: 10px;
+}
+
+.news-modal-title {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.news-modal-excerpt {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--color-text-main);
+  margin-bottom: 18px;
+}
+
+.news-modal-text {
+  font-size: 1.08rem;
+  line-height: 1.75;
+  color: var(--color-text-main);
+}
+
+.news-modal-text a {
+  color: var(--color-orange);
+  text-decoration: underline;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .news-modal-backdrop {
+    padding: 0;
+  }
+  .news-modal-dialog {
+    min-height: 100vh;
+    border-radius: 0;
+  }
+}

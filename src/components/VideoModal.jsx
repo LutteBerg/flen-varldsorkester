@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import './VideoModal.css';
@@ -30,6 +30,12 @@ export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, im
   const dialogRef = useRef(null);
   const closeBtnRef = useRef(null);
   const previousFocusRef = useRef(null);
+  // Image lightbox zoom: false = fit-to-screen, true = natural/original size
+  // (the wrapper becomes scrollable so the visitor can pan around).
+  const [zoomed, setZoomed] = useState(false);
+
+  // Reset zoom whenever the modal opens or the shown image changes.
+  useEffect(() => { setZoomed(false); }, [isOpen, image && image.src]);
 
   const handleClose = useCallback(() => {
     if (typeof onClose === 'function') onClose();
@@ -141,11 +147,13 @@ export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, im
         </button>
 
         {isImage ? (
-          <div className="video-modal-image-wrap">
+          <div className={`video-modal-image-wrap${zoomed ? ' is-zoomed' : ''}`}>
             <img
               src={image.src}
               alt={image.alt || title || ''}
-              className="video-modal-image"
+              className={`video-modal-image${zoomed ? ' video-modal-image--zoomed' : ''}`}
+              onClick={() => setZoomed((z) => !z)}
+              title={zoomed ? 'Klicka för att zooma ut' : 'Klicka för att zooma in'}
             />
           </div>
         ) : (

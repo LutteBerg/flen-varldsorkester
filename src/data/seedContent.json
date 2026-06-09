@@ -27,9 +27,18 @@
       "coverImage": "/assets/fvo/alma-orkester.JPG",
       "practicalInfo": "Repetitionstider och scheman publiceras löpande. Kontakta oss gärna för att spela med!",
       "galleryImages": [
-        { "src": "/assets/fvo/alma-stora kören.JPG", "caption": "Stora kören" },
-        { "src": "/assets/fvo/fvo 1_9.jpg", "caption": "Flen Världsorkester" },
-        { "src": "/assets/fvo/fvo 20240218.jpg", "caption": "Uppträdande 2024" }
+        {
+          "src": "/assets/fvo/alma-stora kören.JPG",
+          "caption": "Stora kören"
+        },
+        {
+          "src": "/assets/fvo/fvo 1_9.jpg",
+          "caption": "Flen Världsorkester"
+        },
+        {
+          "src": "/assets/fvo/fvo 20240218.jpg",
+          "caption": "Uppträdande 2024"
+        }
       ],
       "videos": [
         {
@@ -62,9 +71,18 @@
             }
           ],
           "galleryImages": [
-            { "src": "/assets/musaik/fvo f&k publik.jpeg", "caption": "Publikbild" },
-            { "src": "/assets/musaik/MUSAIK-stränger.jpg", "caption": "Musaik Stränger" },
-            { "src": "/assets/musaik/lutte-orkester.JPG", "caption": "Lutte med orkestern" }
+            {
+              "src": "/assets/musaik/fvo f&k publik.jpeg",
+              "caption": "Publikbild"
+            },
+            {
+              "src": "/assets/musaik/MUSAIK-stränger.jpg",
+              "caption": "Musaik Stränger"
+            },
+            {
+              "src": "/assets/musaik/lutte-orkester.JPG",
+              "caption": "Lutte med orkestern"
+            }
           ]
         }
       ]
@@ -79,7 +97,10 @@
       "coverImage": "/assets/jazz/Logo.jpg",
       "practicalInfo": "Inträde:\nVuxna: 100 kr\nMinderåriga & Kulturskolans elever: Gratis\n\nKafé med hembakat finns på plats. Alkoholfritt.\nÅterkommande konserter på fredagar.",
       "galleryImages": [
-        { "src": "/assets/jazz/Affisch 10 april.jpg", "caption": "Affisch 10 april" }
+        {
+          "src": "/assets/jazz/Affisch 10 april.jpg",
+          "caption": "Affisch 10 april"
+        }
       ],
       "videos": [],
       "childPages": []
@@ -94,9 +115,18 @@
       "coverImage": "/assets/malarateljen/130 x 200.jpeg",
       "practicalInfo": "Kurser och öppettider uppdateras löpande. Välkommen till vår ateljé i Amazon.",
       "galleryImages": [
-        { "src": "/assets/malarateljen/135x200.jpeg", "caption": "Tavla" },
-        { "src": "/assets/malarateljen/81x67.jpeg", "caption": "Tavla" },
-        { "src": "/assets/malarateljen/140x200.jpeg", "caption": "Tavla" }
+        {
+          "src": "/assets/malarateljen/135x200.jpeg",
+          "caption": "Tavla"
+        },
+        {
+          "src": "/assets/malarateljen/81x67.jpeg",
+          "caption": "Tavla"
+        },
+        {
+          "src": "/assets/malarateljen/140x200.jpeg",
+          "caption": "Tavla"
+        }
       ],
       "videos": [
         {
@@ -117,7 +147,10 @@
       "coverImage": "/assets/textilverkstad/klipper.JPG",
       "practicalInfo": "Information om aktuella workshops, vävstolar och öppettider publiceras inom kort.",
       "galleryImages": [
-        { "src": "/assets/textilverkstad/Gruppbild.JPG", "caption": "Deltagare" }
+        {
+          "src": "/assets/textilverkstad/Gruppbild.JPG",
+          "caption": "Deltagare"
+        }
       ],
       "videos": [],
       "childPages": []
@@ -130,10 +163,69 @@
       "date": "2025-01-15",
       "sectionId": "2",
       "excerpt": "Vi förbereder för fullt inför premiären av vår nya klubbscen i Amazon.",
-      "body": "Till våren 2025 slår vi upp portarna för Jazz & World Music Club. Det blir återkommande fredagskonserter, hembakat fika och fantastisk musik till väldigt låga priser (och gratis för unga!). Håll utkik här för det fullständiga programmet.",
-      "image": "",
+      "body": "Till våren 2025 slår vi upp portarna för Jazz & World Music Club. Det blir återkommande fredagskonserter, hembakat fika och fantastisk musik till väldigt låga priser (och gratis för unga!). Håll utkik här för det fullständiga programmet.\n\nLäs mer och boka biljetter: https://www.medilux.example/jazz\nKontakt: lutteberg@gmail.com",
+      "image": "/assets/jazz/Affisch 10 april.jpg",
+      "status": "published"
+    },
+    {
+      "id": "news-seed-fvo-1",
+      "title": "FlenVärldsOrkester på turné i sommar",
+      "date": "2026-06-20",
+      "sectionId": "1",
+      "excerpt": "Vi packar instrumenten och ger oss ut på vägarna – håll utkik efter datum nära dig.",
+      "body": "I sommar reser FlenVärldsOrkester runt i Sörmland med en helt ny konsert.\n\nVi spelar musik från hela världen, skapad tillsammans av proffs och amatörer.\n\nFullständigt program och biljetter: https://www.flenvarldsorkester.example\nFölj oss på Facebook för uppdateringar.",
+      "image": "/assets/fvo/alma-orkester.JPG",
       "status": "published"
     }
   ],
-  "events": []
+  "events": [
+    {
+      "id": "ev-seed-fvo-1",
+      "title": "Världsorkesterns sommarkonsert",
+      "date": "2026-08-15",
+      "time": "18:00",
+      "location": "Amazon, Parkgatan 3, Flen",
+      "description": "En kväll med musik från hela världen, framförd av FlenVärldsOrkester tillsammans med inbjudna gäster.\n\nFri entré för unga. Biljetter och info: https://www.flenvarldsorkester.example/konsert",
+      "sectionId": "1",
+      "childPageId": null,
+      "image": "/assets/fvo/alma-stora kören.JPG",
+      "status": "published"
+    },
+    {
+      "id": "ev-seed-jazz-1",
+      "title": "Fredagsjazz: Peter Asplund \"Aspiration\"",
+      "date": "2026-09-04",
+      "time": "19:00",
+      "location": "Jazz & World Music Club, Amazon, Flen",
+      "description": "Vår fredagsscen öppnar hösten med Peter Asplund. Hembakt fika och kaffe garanteras!\n\nMinderåriga och kulturskoleelever gratis, vuxna 100 kr.",
+      "sectionId": "2",
+      "childPageId": null,
+      "image": "/assets/jazz/Logo.jpg",
+      "status": "published"
+    },
+    {
+      "id": "ev-seed-mal-1",
+      "title": "Vernissage: Sätt färg på Flen",
+      "date": "2026-10-10",
+      "time": "17:00",
+      "location": "Norra Kungsgatan, Flen",
+      "description": "Utställning av ungdomarnas konstverk i skyltfönstren längs Kungsgatan. En 'walk thru'-utställning mitt i Flen.",
+      "sectionId": "3",
+      "childPageId": null,
+      "image": "/assets/malarateljen/140x200.jpeg",
+      "status": "published"
+    },
+    {
+      "id": "ev-seed-musaik-1",
+      "title": "MUSAIK – möte mellan kulturskolor och körer",
+      "date": "2026-11-08",
+      "time": "16:00",
+      "location": "Klosters kyrka, Eskilstuna",
+      "description": "Ett MUSAIK-evenemang knutet till projektsidan. Visas på Musaik-sidan och dess egen evenemangslista.",
+      "sectionId": "1",
+      "childPageId": "seed-1-child-0",
+      "image": "",
+      "status": "published"
+    }
+  ]
 }

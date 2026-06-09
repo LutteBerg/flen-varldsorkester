@@ -6,6 +6,7 @@ import Section from './pages/Section'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import EventList from './pages/EventList'
+import EventDetail from './pages/EventDetail'
 import NewsList from './pages/NewsList'
 import GalleryPage from './pages/GalleryPage'
 import ChildPage from './pages/ChildPage'
@@ -31,9 +32,11 @@ function App() {
           <Route path="/contact" element={<Contact />} />
 
           <Route path="/:slug/evenemang" element={<EventList />} />
+          <Route path="/:slug/evenemang/:eventId" element={<EventDetail />} />
           <Route path="/:slug/nyheter" element={<NewsList />} />
           <Route path="/:slug/galleri" element={<GalleryPage />} />
 
+          <Route path="/:slug/:childSlug/evenemang" element={<EventList />} />
           <Route path="/:slug/:childSlug" element={<ChildPage />} />
           <Route path="/:slug" element={<Section />} />
         </Route>

@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
+import NewsModal from '../components/NewsModal';
 
 export default function NewsList() {
   const { slug } = useParams();
   const [section, setSection] = useState(null);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeNews, setActiveNews] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       const s = await contentRepository.getSectionBySlug(slug);
       setSection(s);
-      
+
       if (s) {
         const n = await contentRepository.getNewsBySection(s.id);
         setNews(n.filter(item => item.status === 'published'));
@@ -39,22 +41,39 @@ export default function NewsList() {
         {news.length > 0 ? (
           <div className="news-list">
             {news.map(n => (
-              <article key={n.id} className="designed-news-card">
+              <button
+                type="button"
+                key={n.id}
+                className="designed-news-card news-card-button"
+                onClick={() => setActiveNews(n)}
+              >
                 <div className="news-date-block">
                   <span className="date-month">{new Date(n.date).toLocaleString('sv-SE', { month: 'short' }).toUpperCase()}</span>
                   <span className="date-day">{new Date(n.date).getDate()}</span>
                 </div>
+                {n.image && (
+                  <div className="news-card-thumb">
+                    <img src={n.image} alt={n.title || ''} loading="lazy" />
+                  </div>
+                )}
                 <div className="news-content">
-                  <h3 className="news-title">{n.title}</h3>
-                  <p>{n.body || n.excerpt}</p>
+                  <div className="news-title">{n.title}</div>
+                  <p>{n.excerpt || n.body}</p>
+                  <span className="news-read-more">Läs mer →</span>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         ) : (
           <p className="empty-state">Inga nyheter publicerade just nu.</p>
         )}
       </div>
+
+      <NewsModal
+        isOpen={!!activeNews}
+        onClose={() => setActiveNews(null)}
+        item={activeNews}
+      />
     </div>
   );
 }

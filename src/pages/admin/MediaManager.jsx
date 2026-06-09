@@ -16,7 +16,8 @@
 // edit form has never undone media changes, and we keep that behavior (with
 // a clear note in the UI).
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { GripVertical } from 'lucide-react';
 import { contentRepository } from '../../lib/cms/contentRepository';
 import VideoEmbed from '../../components/VideoEmbed';
 import { normalizeYouTubeUrl, YOUTUBE_INVALID_MESSAGE } from '../../lib/youtube';
@@ -32,6 +33,59 @@ export default function MediaManager({ parent, existing, onChange }) {
   // Edit-in-place state: which item id is currently being edited.
   const [editingId, setEditingId] = useState(null);
 
+  // ── Drag-and-drop ordering ───────────────────────────────────────────────
+  // `items` mirrors `existing` but can be reordered live while dragging. On
+  // drop we persist the new positions as sort_order via updateMedia.
+  const [items, setItems] = useState(existing || []);
+  const dragIndexRef = useRef(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [reordering, setReordering] = useState(false);
+  const [orderError, setOrderError] = useState('');
+
+  // Re-sync when the parent reloads media after any save.
+  useEffect(() => { setItems(existing || []); }, [existing]);
+
+  function handleDragStart(index) {
+    dragIndexRef.current = index;
+  }
+  function handleDragOver(e, index) {
+    e.preventDefault();
+    const from = dragIndexRef.current;
+    setDragOverIndex(index);
+    if (from === null || from === index) return;
+    setItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(index, 0, moved);
+      return next;
+    });
+    dragIndexRef.current = index;
+  }
+  async function handleDrop() {
+    dragIndexRef.current = null;
+    setDragOverIndex(null);
+    setReordering(true);
+    setOrderError('');
+    try {
+      // Assign a clean sequential sort_order by visible position; only save
+      // the rows whose value actually changed.
+      const changed = items
+        .map((m, idx) => ({ m, idx }))
+        .filter(({ m, idx }) => (m.sortOrder ?? 0) !== idx);
+      await Promise.all(changed.map(({ m, idx }) =>
+        contentRepository.updateMedia(m.id, { sortOrder: idx })
+      ));
+      if (changed.length > 0 && onChange) onChange();
+    } catch (e) {
+      setOrderError(e.message || String(e));
+      if (onChange) onChange(); // re-sync to the server's truth on failure
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  const canReorder = !readOnly && editingId === null && items.length > 1;
+
   return (
     <div style={{ marginTop: 32, padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #ddd' }}>
       <h4 style={{ marginBottom: 4 }}>
@@ -45,20 +99,58 @@ export default function MediaManager({ parent, existing, onChange }) {
       </p>
 
       {/* Existing items list */}
-      {(!existing || existing.length === 0) && (
+      {(!items || items.length === 0) && (
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Ingen media tilldelad ännu.</p>
       )}
-      {(existing || []).map((m) => (
-        <MediaRow
+
+      {canReorder && (
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 8 }}>
+          Dra raderna i <strong>handtaget</strong> (⠿) för att ändra ordningen. Den första videon/bilden visas först på sidan.
+          {reordering && <span style={{ marginLeft: 8, color: 'var(--color-orange)' }}>Sparar ordning…</span>}
+        </p>
+      )}
+      {orderError && <div className="admin-login-error" style={{ marginBottom: 8 }}>{orderError}</div>}
+
+      {items.map((m, index) => (
+        <div
           key={m.id}
-          item={m}
-          isEditing={editingId === m.id}
-          onStartEdit={() => setEditingId(m.id)}
-          onCancelEdit={() => setEditingId(null)}
-          onSaved={() => { setEditingId(null); onChange && onChange(); }}
-          onChange={onChange}
-          readOnly={readOnly}
-        />
+          className="media-dnd-row"
+          draggable={canReorder}
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={handleDrop}
+          onDragEnd={handleDrop}
+          style={{
+            display: 'flex',
+            alignItems: 'stretch',
+            gap: 6,
+            borderRadius: 6,
+            background: dragOverIndex === index ? 'rgba(245, 130, 32, 0.08)' : 'transparent',
+            outline: dragOverIndex === index ? '1px dashed var(--color-orange)' : 'none',
+          }}
+        >
+          {canReorder && (
+            <span
+              className="media-drag-handle"
+              title="Dra för att ändra ordning"
+              aria-hidden="true"
+              style={{ display: 'flex', alignItems: 'center', color: '#9a9a9a', cursor: 'grab', paddingLeft: 2 }}
+            >
+              <GripVertical size={18} />
+            </span>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <MediaRow
+              item={m}
+              isEditing={editingId === m.id}
+              onStartEdit={() => setEditingId(m.id)}
+              onCancelEdit={() => setEditingId(null)}
+              onSaved={() => { setEditingId(null); onChange && onChange(); }}
+              onChange={onChange}
+              readOnly={readOnly}
+            />
+          </div>
+        </div>
       ))}
 
       <h5 style={{ marginTop: 24, marginBottom: 12 }}>Lägg till ny</h5>

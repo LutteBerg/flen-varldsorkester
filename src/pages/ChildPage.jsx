@@ -7,6 +7,7 @@ import HeroVideoSection from '../components/HeroVideoSection';
 import MediaTabs from '../components/MediaTabs';
 import MediaPreviewGrid from '../components/MediaPreviewGrid';
 import VideoModal from '../components/VideoModal';
+import NewsModal from '../components/NewsModal';
 import '../pages/Section.css';
 
 // Child-page renderer (e.g. /flen-varldsorkester/musaik-projektet).
@@ -36,6 +37,7 @@ export default function ChildPage() {
   const [mediaTab, setMediaTab] = useState('bilder');
   const [activeVideo, setActiveVideo] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
+  const [activeNews, setActiveNews] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -99,6 +101,7 @@ export default function ChildPage() {
           backTo={{ to: `/${slug}`, label: `Tillbaka till ${section.title}` }}
           fallbackImage={childPage.coverImage}
           variant="light"
+          externalPaused={!!activeVideo}
         />
       ) : (
         <div className="container" style={{paddingTop: '80px'}}>
@@ -127,16 +130,21 @@ export default function ChildPage() {
             <h2 className="block-title">Senaste Nyheterna</h2>
             <div className="news-list">
               {previewNews.map(n => (
-                <article key={n.id} className="designed-news-card">
+                <button
+                  type="button"
+                  key={n.id}
+                  className="designed-news-card news-card-button"
+                  onClick={() => setActiveNews(n)}
+                >
                   <div className="news-date-block">
                     <span className="date-month">{new Date(n.date).toLocaleString('sv-SE', { month: 'short' }).toUpperCase()}</span>
                     <span className="date-day">{new Date(n.date).getDate()}</span>
                   </div>
                   <div className="news-content">
-                    <h3 className="news-title" style={{fontSize: '1.25rem'}}>{n.title}</h3>
+                    <div className="news-title" style={{fontSize: '1.25rem'}}>{n.title}</div>
                     <p style={{fontSize: '0.95rem'}}>{n.excerpt}</p>
                   </div>
-                </article>
+                </button>
               ))}
             </div>
             <div style={{marginTop: '24px'}}>
@@ -152,7 +160,7 @@ export default function ChildPage() {
             <h2 className="block-title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Evenemang</h2>
             <div className="events-list">
               {previewEvents.map(e => (
-                <div key={e.id} className="designed-event-card">
+                <Link key={e.id} to={`/${slug}/evenemang/${e.id}`} className="designed-event-card event-card-link">
                   <div className="event-stripe"></div>
                   <div className="event-content" style={{padding: '16px'}}>
                     <h4 className="event-title" style={{fontSize: '1.1rem'}}>{e.title}</h4>
@@ -163,11 +171,11 @@ export default function ChildPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             <div style={{marginTop: '24px'}}>
-              <Link to={`/${slug}/evenemang`} className="btn-secondary">Visa alla evenemang</Link>
+              <Link to={`/${slug}/${childSlug}/evenemang`} className="btn-secondary">Visa alla evenemang</Link>
             </div>
           </div>
         )}
@@ -226,6 +234,12 @@ export default function ChildPage() {
         onClose={() => setActiveImage(null)}
         image={activeImage ? { src: activeImage.src, alt: activeImage.alt || activeImage.caption } : null}
         title={activeImage?.caption}
+      />
+
+      <NewsModal
+        isOpen={!!activeNews}
+        onClose={() => setActiveNews(null)}
+        item={activeNews}
       />
 
       <div style={{ marginTop: '60px' }}>

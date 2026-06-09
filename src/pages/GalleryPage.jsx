@@ -14,6 +14,7 @@ export default function GalleryPage() {
   const [section, setSection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [activeImage, setActiveImage] = useState(null);
 
   const rawTab = searchParams.get('tab');
   const currentTab = VALID_TABS.has(rawTab) ? rawTab : 'bilder';
@@ -71,10 +72,16 @@ export default function GalleryPage() {
             {hasImages ? (
               <div className="gallery-grid">
                 {sortedImages.map((img) => (
-                  <div key={img.id} className="gallery-item">
+                  <button
+                    type="button"
+                    key={img.id}
+                    className="gallery-item gallery-item-button"
+                    onClick={() => setActiveImage(img)}
+                    aria-label={img.caption ? `Visa bild: ${img.caption}` : 'Visa bild i full storlek'}
+                  >
                     <img src={img.src} alt={img.caption || "Galleri bild"} loading="lazy" />
                     {img.caption && <div className="gallery-caption">{img.caption}</div>}
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -114,6 +121,13 @@ export default function GalleryPage() {
         embedUrl={activeVideo?.embedUrl}
         url={activeVideo?.url}
         title={activeVideo?.title}
+      />
+
+      <VideoModal
+        isOpen={!!activeImage}
+        onClose={() => setActiveImage(null)}
+        image={activeImage ? { src: activeImage.src, alt: activeImage.alt || activeImage.caption } : null}
+        title={activeImage?.caption}
       />
     </div>
   );

@@ -167,13 +167,19 @@ export default function News() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Sammanfattning</label>
+            <label className="form-label">Kort beskrivning (sammanfattning)</label>
             <textarea className="form-control" style={{minHeight: 80}} value={editingItem.excerpt} onChange={(e) => handleChange('excerpt', e.target.value)} />
+            <p style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4}}>
+              Visas på kortet i nyhetslistan.
+            </p>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Brödtext</label>
-            <textarea className="form-control" value={editingItem.body} onChange={(e) => handleChange('body', e.target.value)} />
+            <label className="form-label">Fullständig beskrivning (brödtext)</label>
+            <textarea className="form-control" style={{minHeight: 160}} value={editingItem.body} onChange={(e) => handleChange('body', e.target.value)} />
+            <p style={{fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4}}>
+              Visas i popup-fönstret när man klickar på nyheten. Länkar (https://…) blir klickbara.
+            </p>
           </div>
 
           <div className="btn-group">

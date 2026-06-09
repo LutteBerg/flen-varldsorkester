@@ -30,20 +30,35 @@ import './HeroVideoSection.css';
 //   variant       - 'dark' (default) | 'light' -- controls the ribbon background
 //                   so a child page on a white surround doesn't draw a hard line
 
-export default function HeroVideoSection({ video, title, backTo, fallbackImage, variant = 'dark' }) {
+export default function HeroVideoSection({ video, title, backTo, fallbackImage, variant = 'dark', externalPaused = false }) {
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const iframeRef = useRef(null);
   const mutedRef = useRef(true);
   mutedRef.current = muted;
+  // Once the visitor takes manual control (pause / mute / restart) OR the
+  // page pauses the hero from outside (e.g. a gallery video opens), we stop
+  // the scroll/gesture auto-unmute+autoplay so the video STAYS stopped/muted
+  // and does not jump back to life on the next scroll.
+  const userControlledRef = useRef(false);
 
   // If the parent swaps to a different video, reset local controls.
   useEffect(() => {
     setMuted(true);
     setPlaying(true);
     setReloadKey((k) => k + 1);
+    userControlledRef.current = false;
   }, [video?.videoId, video?.embedUrl]);
+
+  // External pause: when the page signals it (a gallery/preview video was
+  // opened), stop the hero video and lock it so scrolling won't restart it.
+  useEffect(() => {
+    if (!video || !externalPaused) return;
+    userControlledRef.current = true;
+    setPlaying(false);
+    setReloadKey((k) => k + 1);
+  }, [externalPaused, video]);
 
   // Auto-unmute on user gesture — belt-and-braces, every visit.
   //
@@ -78,6 +93,10 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     };
 
     const handleGesture = () => {
+      // The visitor (or the page) has taken control — do nothing on scroll
+      // or any other gesture. This is what keeps a manually stopped/muted
+      // hero video stopped and muted.
+      if (userControlledRef.current) return;
       if (!mutedRef.current) {
         // Already unmuted — still re-assert in case YouTube dropped state
         // on bfcache restore. Cheap to send.
@@ -152,15 +171,19 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     `&enablejsapi=1`;
 
   function toggleMute() {
+    // Manual sound toggle = the visitor is in control now. Don't force play,
+    // and don't let scroll re-assert audio afterwards.
+    userControlledRef.current = true;
     setMuted((m) => !m);
-    setPlaying(true);
     setReloadKey((k) => k + 1);
   }
   function togglePlay() {
+    userControlledRef.current = true;
     setPlaying((p) => !p);
     setReloadKey((k) => k + 1);
   }
   function restart() {
+    userControlledRef.current = true;
     setPlaying(true);
     setReloadKey((k) => k + 1);
   }
