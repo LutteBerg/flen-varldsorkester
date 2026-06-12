@@ -1,6 +1,6 @@
 import {
-  DEFAULT_IMAGE_PATH,
   FACEBOOK_URL,
+  ORGANIZATION_LOGO_PATH,
   ORGANIZATION_ADDRESS,
   ORGANIZATION_NAME,
   STATIC_LABELS,
@@ -13,6 +13,8 @@ export function renderHead(page) {
     : '<meta name="robots" content="index, follow, max-image-preview:large">';
   const json = JSON.stringify(renderJsonLd(page)).replace(/</g, '\\u003c');
   const type = page.kind === 'event' ? 'event' : 'website';
+  const imageAlt = page.imageMeta?.alt || page.title;
+  const imageType = page.imageMeta?.type || imageMimeType(page.image);
 
   return [
     page.lcpImage
@@ -24,6 +26,17 @@ export function renderHead(page) {
     `<meta property="og:title" content="${escapeHtml(page.title)}">`,
     `<meta property="og:description" content="${escapeHtml(page.description)}">`,
     `<meta property="og:image" content="${escapeHtml(page.image)}">`,
+    `<meta property="og:image:secure_url" content="${escapeHtml(page.image)}">`,
+    imageType
+      ? `<meta property="og:image:type" content="${escapeHtml(imageType)}">`
+      : '',
+    page.imageMeta?.width
+      ? `<meta property="og:image:width" content="${page.imageMeta.width}">`
+      : '',
+    page.imageMeta?.height
+      ? `<meta property="og:image:height" content="${page.imageMeta.height}">`
+      : '',
+    `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}">`,
     `<meta property="og:type" content="${type}">`,
     `<meta property="og:url" content="${escapeHtml(page.canonicalUrl)}">`,
     '<meta property="og:locale" content="sv_SE">',
@@ -31,6 +44,7 @@ export function renderHead(page) {
     `<meta name="twitter:title" content="${escapeHtml(page.title)}">`,
     `<meta name="twitter:description" content="${escapeHtml(page.description)}">`,
     `<meta name="twitter:image" content="${escapeHtml(page.image)}">`,
+    `<meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}">`,
     `<script type="application/ld+json">${json}</script>`,
   ].join('');
 }
@@ -48,7 +62,7 @@ export function renderJsonLd(page) {
     url: `${page.origin}/`,
     logo: {
       '@type': 'ImageObject',
-      url: absoluteUrl(DEFAULT_IMAGE_PATH, page.origin),
+      url: absoluteUrl(ORGANIZATION_LOGO_PATH, page.origin),
     },
     address: {
       '@type': 'PostalAddress',
@@ -469,6 +483,14 @@ function paragraph(value) {
 function extractVideoId(value = '') {
   const match = String(value).match(/(?:embed\/|youtu\.be\/|[?&]v=)([A-Za-z0-9_-]+)/);
   return match?.[1];
+}
+
+function imageMimeType(value = '') {
+  const pathname = new URL(value, 'https://example.invalid').pathname.toLowerCase();
+  if (pathname.endsWith('.jpg') || pathname.endsWith('.jpeg')) return 'image/jpeg';
+  if (pathname.endsWith('.png')) return 'image/png';
+  if (pathname.endsWith('.webp')) return 'image/webp';
+  return undefined;
 }
 
 function stockholmOffsetMs(timestamp) {

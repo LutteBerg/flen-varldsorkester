@@ -10,7 +10,6 @@ import {
   renderNoscript,
   stockholmDateTime,
 } from '../functions/seo/render.js';
-import { DEFAULT_IMAGE_PATH } from '../functions/seo/constants.js';
 import { SITE_ORIGIN, seoFixture } from './seo-fixture.js';
 
 test('event startDate uses the Europe/Stockholm summer offset', () => {
@@ -47,13 +46,23 @@ test('home head preloads its real LCP image from D1', () => {
   );
 });
 
-test('head metadata falls back to the absolute logo and noindexes admin', () => {
+test('head metadata exposes a complete Facebook image card and noindexes admin', () => {
   const about = renderHead(resolveSeoPage('/about', seoFixture, SITE_ORIGIN));
   const admin = renderHead(resolveSeoPage('/admin/login', seoFixture, SITE_ORIGIN));
+  const socialImage = `${SITE_ORIGIN}/assets/social/fvo-social-preview.jpg`;
 
+  assert.match(about, new RegExp(`property="og:image" content="${socialImage}"`));
+  assert.match(about, new RegExp(`property="og:image:secure_url" content="${socialImage}"`));
+  assert.match(about, /property="og:image:type" content="image\/jpeg"/);
+  assert.match(about, /property="og:image:width" content="1200"/);
+  assert.match(about, /property="og:image:height" content="630"/);
   assert.match(
     about,
-    new RegExp(`property="og:image" content="${SITE_ORIGIN}${DEFAULT_IMAGE_PATH}"`),
+    /property="og:image:alt" content="FlenVärldsOrkester med solist och kör på scen"/,
+  );
+  assert.match(
+    about,
+    /name="twitter:image:alt" content="FlenVärldsOrkester med solist och kör på scen"/,
   );
   assert.match(admin, /name="robots" content="noindex, nofollow, noarchive"/);
 });
@@ -71,7 +80,7 @@ test('JSON-LD exposes Organization, WebSite, and BreadcrumbList', () => {
 
   const organization = graph['@graph'].find((item) => item['@type'] === 'Organization');
   const performingGroup = graph['@graph'].find((item) => item['@type'] === 'PerformingGroup');
-  assert.equal(organization.logo.url, `${SITE_ORIGIN}${DEFAULT_IMAGE_PATH}`);
+  assert.equal(organization.logo.url, `${SITE_ORIGIN}/assets/fvo_logo.png`);
   assert.equal(organization.address.addressLocality, 'Flen');
   assert.equal(
     performingGroup.parentOrganization['@id'],

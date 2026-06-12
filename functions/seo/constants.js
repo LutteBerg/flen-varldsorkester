@@ -1,5 +1,12 @@
 export const SITE_ORIGIN = 'https://flen-varldsorkester.pages.dev';
-export const DEFAULT_IMAGE_PATH = '/assets/fvo_logo.png';
+export const ORGANIZATION_LOGO_PATH = '/assets/fvo_logo.png';
+export const DEFAULT_SOCIAL_IMAGE_PATH = '/assets/social/fvo-social-preview.jpg';
+export const DEFAULT_SOCIAL_IMAGE = {
+  type: 'image/jpeg',
+  width: 1200,
+  height: 630,
+  alt: 'FlenVärldsOrkester med solist och kör på scen',
+};
 export const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=100063526774421';
 export const ORGANIZATION_NAME = 'Kulturföreningen FlenVärldsOrkester';
 export const ORGANIZATION_ADDRESS = {

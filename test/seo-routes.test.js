@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveSeoPage } from '../functions/seo/routes.js';
-import { DEFAULT_IMAGE_PATH } from '../functions/seo/constants.js';
 import { SITE_ORIGIN, seoFixture } from './seo-fixture.js';
 
 test('resolves home with its visible D1 text', () => {
@@ -81,10 +80,19 @@ test('marks every admin descendant noindex', () => {
   assert.equal(page.noindex, true);
 });
 
-test('uses an absolute default logo when the route has no image', () => {
+test('uses the approved social photograph when the route has no image', () => {
   const page = resolveSeoPage('/about', seoFixture, SITE_ORIGIN);
 
-  assert.equal(page.image, `${SITE_ORIGIN}${DEFAULT_IMAGE_PATH}`);
+  assert.equal(
+    page.image,
+    `${SITE_ORIGIN}/assets/social/fvo-social-preview.jpg`,
+  );
+  assert.deepEqual(page.imageMeta, {
+    type: 'image/jpeg',
+    width: 1200,
+    height: 630,
+    alt: 'FlenVärldsOrkester med solist och kör på scen',
+  });
 });
 
 test('normalizes trailing slashes and preserves Swedish content', () => {

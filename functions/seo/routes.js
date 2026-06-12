@@ -1,5 +1,6 @@
 import {
-  DEFAULT_IMAGE_PATH,
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_SOCIAL_IMAGE_PATH,
   ORGANIZATION_NAME,
   STATIC_LABELS,
 } from './constants.js';
@@ -15,7 +16,7 @@ export function resolveSeoPage(pathname, snapshot, origin) {
     canonicalUrl: absoluteUrl(canonicalPath, origin),
     title: siteTitle,
     description: snapshot?.global?.homeIntro || DEFAULT_DESCRIPTION,
-    image: absoluteUrl(DEFAULT_IMAGE_PATH, origin),
+    image: absoluteUrl(DEFAULT_SOCIAL_IMAGE_PATH, origin),
     noindex: false,
     breadcrumbs: [{ name: 'Hem', path: '/' }],
     visibleText: [],
@@ -118,7 +119,7 @@ export function resolveSeoPage(pathname, snapshot, origin) {
       canonicalUrl: absoluteUrl(sectionPath, origin),
       title: pageTitle(section.title, siteTitle),
       description: section.shortDescription || section.fullDescription || base.description,
-      image: absoluteUrl(section.coverImage || DEFAULT_IMAGE_PATH, origin),
+      image: absoluteUrl(section.coverImage || DEFAULT_SOCIAL_IMAGE_PATH, origin),
       breadcrumbs: [...base.breadcrumbs, sectionCrumb],
       section,
       news: sectionNews,
@@ -196,7 +197,7 @@ export function resolveSeoPage(pathname, snapshot, origin) {
       kind: 'news-list',
       title: pageTitle(`${STATIC_LABELS.newsTitle} – ${section.title}`, siteTitle),
       description: section.shortDescription || base.description,
-      image: absoluteUrl(section.coverImage || DEFAULT_IMAGE_PATH, origin),
+      image: absoluteUrl(section.coverImage || DEFAULT_SOCIAL_IMAGE_PATH, origin),
       breadcrumbs: [
         ...base.breadcrumbs,
         sectionCrumb,
@@ -225,7 +226,7 @@ export function resolveSeoPage(pathname, snapshot, origin) {
       kind: 'gallery',
       title: pageTitle(`${STATIC_LABELS.galleryTitle} – ${section.title}`, siteTitle),
       description: section.shortDescription || base.description,
-      image: absoluteUrl(section.coverImage || DEFAULT_IMAGE_PATH, origin),
+      image: absoluteUrl(section.coverImage || DEFAULT_SOCIAL_IMAGE_PATH, origin),
       breadcrumbs: [
         ...base.breadcrumbs,
         sectionCrumb,
@@ -262,7 +263,10 @@ export function resolveSeoPage(pathname, snapshot, origin) {
       canonicalUrl: absoluteUrl(childPath, origin),
       title: pageTitle(child.title, siteTitle),
       description: child.shortDescription || child.body || section.shortDescription || base.description,
-      image: absoluteUrl(child.coverImage || section.coverImage || DEFAULT_IMAGE_PATH, origin),
+      image: absoluteUrl(
+        child.coverImage || section.coverImage || DEFAULT_SOCIAL_IMAGE_PATH,
+        origin,
+      ),
       breadcrumbs: [...base.breadcrumbs, sectionCrumb, childCrumb],
       section,
       child,
@@ -331,7 +335,7 @@ function eventListPage({
     title: pageTitle(`${STATIC_LABELS.eventsTitle} – ${parentTitle}`, siteTitle),
     description: child?.shortDescription || section.shortDescription || base.description,
     image: absoluteUrl(
-      child?.coverImage || section.coverImage || DEFAULT_IMAGE_PATH,
+      child?.coverImage || section.coverImage || DEFAULT_SOCIAL_IMAGE_PATH,
       origin,
     ),
     breadcrumbs: [
@@ -380,7 +384,10 @@ function eventPage({
     canonicalUrl: absoluteUrl(canonicalPath, origin),
     title: pageTitle(event.title, siteTitle),
     description: event.description || `${event.title} – ${event.date}`,
-    image: absoluteUrl(event.image || section.coverImage || DEFAULT_IMAGE_PATH, origin),
+    image: absoluteUrl(
+      event.image || section.coverImage || DEFAULT_SOCIAL_IMAGE_PATH,
+      origin,
+    ),
     breadcrumbs: [
       ...breadcrumbs,
       {
@@ -413,10 +420,18 @@ function unknownPage(base, siteTitle) {
 }
 
 function finalize(page) {
+  const image = absoluteUrl(
+    page.image || DEFAULT_SOCIAL_IMAGE_PATH,
+    page.origin,
+  );
+  const defaultSocialImage = absoluteUrl(DEFAULT_SOCIAL_IMAGE_PATH, page.origin);
   return {
     ...page,
     canonicalUrl: absoluteUrl(page.canonicalPath, page.origin),
-    image: absoluteUrl(page.image || DEFAULT_IMAGE_PATH, page.origin),
+    image,
+    imageMeta: image === defaultSocialImage
+      ? { ...DEFAULT_SOCIAL_IMAGE }
+      : page.imageMeta,
     description: cleanDescription(page.description),
   };
 }
@@ -470,7 +485,7 @@ function pageTitle(label, siteTitle) {
 }
 
 export function absoluteUrl(value, origin) {
-  if (!value) return new URL(DEFAULT_IMAGE_PATH, origin).href;
+  if (!value) return new URL(DEFAULT_SOCIAL_IMAGE_PATH, origin).href;
   return new URL(value, origin).href;
 }
 
