@@ -6,8 +6,12 @@ import SocialCTA from '../components/SocialCTA';
 import './Home.css';
 
 export default function Home() {
-  const [globalContent, setGlobalContent] = useState(null);
-  const [sections, setSections] = useState([]);
+  const [globalContent, setGlobalContent] = useState(
+    () => contentRepository.peekGlobalContent(),
+  );
+  const [sections, setSections] = useState(
+    () => contentRepository.peekSections() || [],
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -58,9 +62,12 @@ export default function Home() {
                   <img
                     src={section.coverImage}
                     alt={section.title}
+                    width="1600"
+                    height="900"
                     className="img-documentary"
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding={index === 0 ? 'sync' : 'async'}
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
                   />
                 ) : (
                   <div className="img-placeholder">Bild kommer</div>

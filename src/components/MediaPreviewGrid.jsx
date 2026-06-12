@@ -49,12 +49,24 @@ export default function MediaPreviewGrid({ items, type, maxItems = 3, onVideoCli
             onClick={() => onImageClick(img)}
             aria-label={img.caption ? `Visa bild: ${img.caption}` : 'Visa bild'}
           >
-            <img src={img.src} alt={img.caption || 'Galleribild'} loading="lazy" />
+            <img
+              src={img.src}
+              alt={img.caption || 'Galleribild'}
+              width="1600"
+              height="900"
+              loading="lazy"
+            />
             {img.caption && <div className="media-preview-caption">{img.caption}</div>}
           </button>
         ) : (
           <div key={`i-${img.id}`} className="media-preview-tile">
-            <img src={img.src} alt={img.caption || 'Galleribild'} loading="lazy" />
+            <img
+              src={img.src}
+              alt={img.caption || 'Galleribild'}
+              width="1600"
+              height="900"
+              loading="lazy"
+            />
             {img.caption && <div className="media-preview-caption">{img.caption}</div>}
           </div>
         )

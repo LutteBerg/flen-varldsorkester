@@ -1,0 +1,18 @@
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Google-Extended
+User-agent: CCBot
+Allow: /
+Disallow: /admin
+
+User-agent: *
+Allow: /
+Disallow: /admin
+
+Sitemap: https://flen-varldsorkester.pages.dev/sitemap.xml

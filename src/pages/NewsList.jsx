@@ -53,7 +53,13 @@ export default function NewsList() {
                 </div>
                 {n.image && (
                   <div className="news-card-thumb">
-                    <img src={n.image} alt={n.title || ''} loading="lazy" />
+                    <img
+                      src={n.image}
+                      alt={n.title || ''}
+                      width="1600"
+                      height="900"
+                      loading="lazy"
+                    />
                   </div>
                 )}
                 <div className="news-content">

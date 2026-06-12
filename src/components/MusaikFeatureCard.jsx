@@ -24,6 +24,8 @@ export default function MusaikFeatureCard({ logoSrc, logoAlt, title, description
             <img
               src={logoSrc}
               alt={logoAlt || title}
+              width="800"
+              height="800"
               loading="lazy"
               className="musaik-feature-logo"
             />

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -11,20 +11,20 @@ import NewsList from './pages/NewsList'
 import GalleryPage from './pages/GalleryPage'
 import ChildPage from './pages/ChildPage'
 
-// Admin
-import AdminLayout from './pages/admin/AdminLayout'
-import AdminLogin from './pages/admin/Login'
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminSections from './pages/admin/Sections'
-import AdminChildPages from './pages/admin/ChildPages'
-import AdminNews from './pages/admin/News'
-import AdminEvents from './pages/admin/Events'
-import AdminGlobal from './pages/admin/Global'
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminLogin = lazy(() => import('./pages/admin/Login'))
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const AdminSections = lazy(() => import('./pages/admin/Sections'))
+const AdminChildPages = lazy(() => import('./pages/admin/ChildPages'))
+const AdminNews = lazy(() => import('./pages/admin/News'))
+const AdminEvents = lazy(() => import('./pages/admin/Events'))
+const AdminGlobal = lazy(() => import('./pages/admin/Global'))
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={null}>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Layout />}>
           <Route path="/" element={<Home />} />
@@ -53,7 +53,8 @@ function App() {
           <Route path="news" element={<AdminNews />} />
           <Route path="events" element={<AdminEvents />} />
         </Route>
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

@@ -415,6 +415,8 @@ function UploadForm({ parent, onSaved, readOnly }) {
           <img
             src={previewUrl}
             alt="Förhandsvisning"
+            width="1600"
+            height="900"
             style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 4, border: '1px solid #ddd' }}
           />
         </div>

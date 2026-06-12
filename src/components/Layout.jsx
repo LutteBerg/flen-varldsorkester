@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { contentRepository } from '../lib/cms/contentRepository';
@@ -6,7 +6,9 @@ import './Layout.css';
 
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [globalContent, setGlobalContent] = useState(null);
+  const [globalContent, setGlobalContent] = useState(
+    () => contentRepository.peekGlobalContent(),
+  );
   const location = useLocation();
 
   useEffect(() => {
@@ -28,7 +30,15 @@ export default function Layout() {
       <header className="header">
         <div className="container header-inner">
           <Link to="/" className="logo">
-            <img src="/assets/fvo_logo.png" alt={globalContent.siteTitle} style={{ height: '40px', width: 'auto' }} />
+            <img
+              src="/assets/fvo_logo.png"
+              alt={globalContent.siteTitle}
+              width="2000"
+              height="245"
+              fetchPriority="high"
+              decoding="async"
+              style={{ height: '40px', width: 'auto' }}
+            />
           </Link>
 
           <nav className="desktop-nav">
@@ -40,6 +50,7 @@ export default function Layout() {
           <button 
             className="mobile-menu-btn"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? 'Stäng meny' : 'Öppna meny'}
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>

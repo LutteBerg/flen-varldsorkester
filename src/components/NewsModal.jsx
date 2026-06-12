@@ -72,7 +72,12 @@ export default function NewsModal({ isOpen, onClose, item }) {
 
         {item.image && (
           <div className="news-modal-image">
-            <img src={item.image} alt={item.title || ''} />
+            <img
+              src={item.image}
+              alt={item.title || ''}
+              width="1600"
+              height="900"
+            />
           </div>
         )}
 

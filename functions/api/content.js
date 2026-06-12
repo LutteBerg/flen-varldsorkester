@@ -8,12 +8,12 @@
 // `WHERE status = 'published'`. This is the public/draft boundary —
 // the frontend does NOT need to filter again.
 
-import { json, error } from '../lib/response.js';
+import { json } from '../lib/response.js';
 import { requireDb, wrap } from '../lib/db.js';
-import { buildContentSnapshot } from './_lib/content.js';
+import { getPublishedSnapshot } from '../seo/snapshot-cache.js';
 
 export const onRequestGet = wrap(async ({ env }) => {
-  const db = requireDb(env);
-  const snapshot = await buildContentSnapshot(db, { publishedOnly: true });
+  requireDb(env);
+  const snapshot = await getPublishedSnapshot(env);
   return json(snapshot);
 });

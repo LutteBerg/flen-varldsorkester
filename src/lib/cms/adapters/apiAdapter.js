@@ -10,7 +10,7 @@
 export class ApiAdapter {
   constructor() {
     this.isReadOnly = false;
-    this._publicSnapshot = null;
+    this._publicSnapshot = readPublicContentBootstrap();
     this._publicPromise = null;
   }
 
@@ -47,6 +47,9 @@ export class ApiAdapter {
 
   async getGlobalContent() { return (await this._public()).global; }
   async getSections()      { return (await this._public()).sections; }
+  peekContent()             { return this._publicSnapshot; }
+  peekGlobalContent()       { return this._publicSnapshot?.global || null; }
+  peekSections()            { return this._publicSnapshot?.sections || null; }
   async getSectionBySlug(slug) {
     return (await this._public()).sections.find(s => s.slug === slug);
   }
@@ -182,6 +185,16 @@ export class ApiAdapter {
   }
 }
 
+export function parsePublicContentBootstrap(value) {
+  if (!value) return null;
+  try {
+    const snapshot = JSON.parse(value);
+    return snapshot && typeof snapshot === 'object' ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
 export class UnauthorizedError extends Error {
   constructor() { super('Not authenticated'); this.name = 'UnauthorizedError'; }
 }
@@ -210,4 +223,11 @@ async function adminFetch(path, options = {}) {
     throw new Error(msg);
   }
   return data || {};
+}
+
+function readPublicContentBootstrap() {
+  if (typeof document === 'undefined') return null;
+  return parsePublicContentBootstrap(
+    document.getElementById('__PUBLIC_CONTENT__')?.textContent,
+  );
 }

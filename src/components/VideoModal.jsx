@@ -151,6 +151,8 @@ export default function VideoModal({ isOpen, onClose, videoId, embedUrl, url, im
             <img
               src={image.src}
               alt={image.alt || title || ''}
+              width="1600"
+              height="900"
               className={`video-modal-image${zoomed ? ' video-modal-image--zoomed' : ''}`}
               onClick={() => setZoomed((z) => !z)}
               title={zoomed ? 'Klicka för att zooma ut' : 'Klicka för att zooma in'}

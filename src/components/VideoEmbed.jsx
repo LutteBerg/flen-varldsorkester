@@ -141,7 +141,13 @@ export function VideoThumbnail({ videoId, url, className = '' }) {
   const thumbUrl = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   return (
     <div className={`video-thumb-wrapper ${className}`}>
-      <img src={thumbUrl} alt="Video thumbnail" loading="lazy" />
+      <img
+        src={thumbUrl}
+        alt="Video thumbnail"
+        width="480"
+        height="360"
+        loading="lazy"
+      />
       <div className="play-indicator">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="5 3 19 12 5 21 5 3" />

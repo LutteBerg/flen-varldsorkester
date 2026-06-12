@@ -88,7 +88,12 @@ export default function EventDetail() {
 
           {event.image && (
             <div className="event-detail-image">
-              <img src={event.image} alt={event.title} />
+              <img
+                src={event.image}
+                alt={event.title}
+                width="1600"
+                height="900"
+              />
             </div>
           )}
 

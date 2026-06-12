@@ -17,13 +17,16 @@ export const contentRepository = {
   // Bulk
   getContent:       () => adapter.getContent(),
   getAdminContent:  () => adapter.getAdminContent(),
+  peekContent:      () => adapter.peekContent?.() || null,
 
   // Global
   getGlobalContent:    () => adapter.getGlobalContent(),
+  peekGlobalContent:   () => adapter.peekGlobalContent?.() || null,
   updateGlobalContent: (content) => adapter.updateGlobalContent(content),
 
   // Sections
   getSections:       () => adapter.getSections(),
+  peekSections:      () => adapter.peekSections?.() || null,
   getSectionBySlug:  (slug) => adapter.getSectionBySlug(slug),
   updateSection:     (id, updates) => adapter.updateSection(id, updates),
 

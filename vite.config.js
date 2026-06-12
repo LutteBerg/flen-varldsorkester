@@ -8,7 +8,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: [
+        'favicon.png',
+        'favicon.svg',
+        'assets/fvo_logo.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+      ],
       workbox: {
         // SPA navigation fallback must NEVER intercept /api/*. Pages Functions
         // serve API routes; if the SW returned cached index.html for an
@@ -18,20 +24,23 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
       },
       manifest: {
-        name: 'Kulturföreningen Flen Världsorkester',
-        short_name: 'Flen Världsorkester',
+        name: 'Kulturföreningen FlenVärldsOrkester',
+        short_name: 'FlenVärldsOrkester',
         description: 'Musik, konst och kreativa mötesplatser i Amazon, Flen.',
+        lang: 'sv-SE',
+        start_url: '/',
+        scope: '/',
         theme_color: '#E66A2C',
         background_color: '#ffffff',
         display: 'standalone',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
           }

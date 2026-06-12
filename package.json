@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --test",
+    "test:seo": "node --test test/seo-*.test.js",
     "build": "vite build",
     "postbuild": "node scripts/check-bundle.mjs",
     "build:verify": "npm run build && node scripts/check-bundle.mjs",

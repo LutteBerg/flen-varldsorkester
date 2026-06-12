@@ -79,7 +79,13 @@ export default function GalleryPage() {
                     onClick={() => setActiveImage(img)}
                     aria-label={img.caption ? `Visa bild: ${img.caption}` : 'Visa bild i full storlek'}
                   >
-                    <img src={img.src} alt={img.caption || "Galleri bild"} loading="lazy" />
+                    <img
+                      src={img.src}
+                      alt={img.caption || "Galleri bild"}
+                      width="1600"
+                      height="900"
+                      loading="lazy"
+                    />
                     {img.caption && <div className="gallery-caption">{img.caption}</div>}
                   </button>
                 ))}

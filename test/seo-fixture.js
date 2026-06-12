@@ -1,0 +1,117 @@
+export const SITE_ORIGIN = 'https://flen-varldsorkester.pages.dev';
+
+export const seoFixture = {
+  global: {
+    siteTitle: 'Kulturföreningen FlenVärldsOrkester',
+    homeIntro: 'Den kreativa mötesplatsen i Flen.',
+    aboutText: 'Kulturföreningen driver verksamheter i Amazon, Flen.',
+    contactInfo: {
+      address: 'Parkgatan 3, 642 31 Flen',
+      email: 'lutteberg@gmail.com',
+      phone: 'Aktuell information uppdateras löpande.',
+    },
+    socialLinks: [
+      {
+        platform: 'Facebook',
+        url: 'https://www.facebook.com/profile.php?id=100063526774421',
+      },
+    ],
+    updatedAt: '2026-06-01T10:00:00.000Z',
+  },
+  sections: [
+    {
+      id: 'section-fvo',
+      slug: 'flen-varldsorkester',
+      title: 'FlenVärldsOrkester',
+      shortDescription: 'En orkester som förenar musiker.',
+      fullDescription: 'Vi spelar musik över alla gränser.',
+      practicalInfo: 'Repetitionstider publiceras löpande.',
+      coverImage: '/assets/fvo/alma-orkester.JPG',
+      updatedAt: '2026-06-02T10:00:00.000Z',
+      galleryImages: [
+        {
+          id: 'image-fvo',
+          src: '/assets/fvo/ensemble.JPG',
+          caption: 'Orkestern på scen',
+          alt: 'Orkestern på scen',
+          updatedAt: '2026-06-03T10:00:00.000Z',
+        },
+      ],
+      videos: [
+        {
+          id: 'video-fvo',
+          title: 'FlenVärldsOrkester live',
+          videoId: 'abcdefghijk',
+          embedUrl: 'https://www.youtube.com/embed/abcdefghijk',
+          updatedAt: '2026-06-04T10:00:00.000Z',
+        },
+      ],
+      childPages: [
+        {
+          id: 'child-musaik',
+          sectionId: 'section-fvo',
+          slug: 'musaik-projektet',
+          title: 'Musaik Projektet',
+          shortDescription: 'Skapande, gemenskap och musik.',
+          body: 'Musaik samlar människor genom musik.',
+          coverImage: '',
+          updatedAt: '2026-06-05T10:00:00.000Z',
+          galleryImages: [],
+          videos: [],
+        },
+      ],
+    },
+    {
+      id: 'section-jazz',
+      slug: 'jazz-world-music-club',
+      title: 'Jazz & World Music Club',
+      shortDescription: 'Din lokala scen för jazz och världsmusik.',
+      fullDescription: 'Återkommande fredagskonserter i Amazon.',
+      practicalInfo: 'Vuxna 100 kr. Minderåriga gratis.',
+      coverImage: '/assets/jazz/Logo.jpg',
+      updatedAt: '2026-06-06T10:00:00.000Z',
+      galleryImages: [],
+      videos: [],
+      childPages: [],
+    },
+  ],
+  news: [
+    {
+      id: 'news-jazz',
+      title: 'Klubbscenen öppnar',
+      date: '2026-06-10',
+      sectionId: 'section-jazz',
+      childPageId: null,
+      excerpt: 'Vi öppnar dörrarna för fredagsjazz.',
+      body: 'Välkommen till en ny konsertsäsong.',
+      image: '/assets/jazz/Logo.jpg',
+      updatedAt: '2026-06-07T10:00:00.000Z',
+    },
+  ],
+  events: [
+    {
+      id: 'event-summer',
+      title: 'Sommarkonsert',
+      date: '2026-08-15',
+      time: '18:00',
+      location: 'Amazon, Parkgatan 3, Flen',
+      description: 'Fri entré för unga.',
+      sectionId: 'section-fvo',
+      childPageId: null,
+      image: '/assets/fvo/alma-orkester.JPG',
+      updatedAt: '2026-06-08T10:00:00.000Z',
+    },
+    {
+      id: 'event-child',
+      title: 'Musaik i Klosters kyrka',
+      date: '2026-11-08',
+      time: '16:00',
+      location: 'Klosters kyrka, Eskilstuna',
+      description: 'Ett evenemang för Musaik.',
+      sectionId: 'section-fvo',
+      childPageId: 'child-musaik',
+      image: '',
+      updatedAt: '2026-06-09T10:00:00.000Z',
+    },
+  ],
+};

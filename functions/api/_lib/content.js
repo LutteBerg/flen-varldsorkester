@@ -15,7 +15,7 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     newsRes,
     eventsRes,
   ] = await Promise.all([
-    db.prepare(`SELECT key, value FROM site_settings WHERE key = 'global' LIMIT 1`).all(),
+    db.prepare(`SELECT key, value, updated_at FROM site_settings WHERE key = 'global' LIMIT 1`).all(),
     db.prepare(`SELECT * FROM sections WHERE ${statusFilter} ORDER BY sort_order ASC, created_at ASC`).all(),
     db.prepare(`SELECT * FROM child_pages WHERE ${statusFilter} ORDER BY sort_order ASC, created_at ASC`).all(),
     db.prepare(`SELECT * FROM media_items WHERE ${statusFilter} ORDER BY pinned DESC, sort_order ASC, created_at DESC`).all(),
@@ -32,8 +32,12 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
   };
   if (settingsRes.results && settingsRes.results.length > 0) {
     try {
-      global = { ...global, ...JSON.parse(settingsRes.results[0].value) };
-    } catch (_) { /* keep defaults */ }
+      global = {
+        ...global,
+        ...JSON.parse(settingsRes.results[0].value),
+        updatedAt: settingsRes.results[0].updated_at || null,
+      };
+    } catch { /* keep defaults */ }
   }
 
   const mediaForSection = (sectionId, type) =>
@@ -54,6 +58,8 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
       coverImage: cp.cover_image || '',
       sortOrder: cp.sort_order,
       status: cp.status,
+      createdAt: cp.created_at || null,
+      updatedAt: cp.updated_at || null,
       galleryImages: mediaForChild(cp.id, 'image').map(toGalleryImage),
       videos: mediaForChild(cp.id, 'youtube').map(toVideo),
     });
@@ -71,6 +77,8 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     practicalInfo: s.practical_info || '',
     sortOrder: s.sort_order,
     status: s.status,
+    createdAt: s.created_at || null,
+    updatedAt: s.updated_at || null,
     galleryImages: mediaForSection(s.id, 'image').map(toGalleryImage),
     videos: mediaForSection(s.id, 'youtube').map(toVideo),
     childPages: childPagesBySection.get(s.id) || [],
@@ -89,6 +97,8 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     body: n.body || '',
     image: n.image || '',
     status: n.status,
+    createdAt: n.created_at || null,
+    updatedAt: n.updated_at || null,
   }));
 
   const events = (eventsRes.results || []).map(e => ({
@@ -102,6 +112,8 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     childPageId: e.child_page_id || null,
     image: e.image || '',
     status: e.status,
+    createdAt: e.created_at || null,
+    updatedAt: e.updated_at || null,
   }));
 
   return { global, sections, news, events };
@@ -121,6 +133,8 @@ function toGalleryImage(m) {
     objectKey: m.object_key || null,
     contentType: m.content_type || null,
     size: typeof m.size === 'number' ? m.size : null,
+    createdAt: m.created_at || null,
+    updatedAt: m.updated_at || null,
   };
 }
 
@@ -137,5 +151,7 @@ function toVideo(m) {
     sortOrder: m.sort_order,
     status: m.status,
     context: m.context || '',
+    createdAt: m.created_at || null,
+    updatedAt: m.updated_at || null,
   };
 }
