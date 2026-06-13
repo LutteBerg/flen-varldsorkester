@@ -79,8 +79,12 @@ export default function Sections() {
               <option value="video">Bakgrundsvideo (kräver en fäst video)</option>
             </select>
 
-            <label className="form-label">Bild URL (om "Fast Bild" är valt)</label>
-            <input type="text" className="form-control" placeholder="/assets/..." value={editing.coverImage || ''} onChange={(e) => handleChange('coverImage', e.target.value)} />
+            <label className="form-label">Omslagsbild (visas på startsidan, om "Fast Bild" är valt)</label>
+            <CoverImagePicker
+              value={editing.coverImage || ''}
+              images={editing.galleryImages || []}
+              onChange={(url) => handleChange('coverImage', url)}
+            />
             <p style={{fontSize: '0.85rem', color: '#666', marginTop: 8}}>För video, lägg till en video nedan och markera "Fäst överst".</p>
           </div>
 
@@ -158,6 +162,97 @@ export default function Sections() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// Visual picker for a section's cover image (the photo shown on the start page).
+// Reuses the images already uploaded to this section's media library below — the
+// admin uploads via the media panel, then clicks a thumbnail here to make it the
+// cover. The manual URL field is kept for legacy /assets/... paths and advanced
+// use, so the previous "type a path" behaviour still works unchanged.
+function CoverImagePicker({ value, images, onChange }) {
+  const imageList = (images || []).filter((img) => img && img.src);
+
+  return (
+    <div>
+      {value ? (
+        <div style={{ marginBottom: 12 }}>
+          <img
+            src={value}
+            alt="Vald omslagsbild"
+            width="1600"
+            height="900"
+            style={{ maxWidth: '100%', height: 'auto', maxHeight: 200, borderRadius: 6, border: '1px solid #ddd', display: 'block' }}
+          />
+        </div>
+      ) : (
+        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+          Ingen omslagsbild vald ännu.
+        </p>
+      )}
+
+      {imageList.length > 0 ? (
+        <>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '0 0 8px' }}>
+            Klicka på en bild från sektionens bildbibliotek för att använda den som omslagsbild:
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            {imageList.map((img) => {
+              const active = img.src === value;
+              return (
+                <button
+                  key={img.id}
+                  type="button"
+                  onClick={() => onChange(img.src)}
+                  aria-pressed={active}
+                  title={img.title || img.alt || img.src}
+                  style={{
+                    padding: 0,
+                    border: active ? '3px solid var(--color-orange)' : '1px solid #ddd',
+                    borderRadius: 6,
+                    background: 'none',
+                    cursor: 'pointer',
+                    lineHeight: 0,
+                  }}
+                >
+                  <img
+                    src={img.src}
+                    alt={img.alt || img.title || ''}
+                    width={96}
+                    height={64}
+                    style={{ width: 96, height: 64, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+          Inga bilder uppladdade i den här sektionen ännu. Ladda upp en bild i mediabiblioteket längre ner på sidan, så kan du välja den som omslagsbild här.
+        </p>
+      )}
+
+      <label className="form-label" style={{ fontSize: '0.85rem' }}>Eller ange en bild-URL manuellt</label>
+      <input
+        type="text"
+        className="form-control"
+        placeholder="/assets/... eller /media/..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+
+      {value && (
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ marginTop: 8, fontSize: '0.85rem', padding: '6px 12px' }}
+          onClick={() => onChange('')}
+        >
+          Ta bort omslagsbild
+        </button>
+      )}
     </div>
   );
 }
