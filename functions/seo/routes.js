@@ -4,10 +4,21 @@ import {
   ORGANIZATION_NAME,
   STATIC_LABELS,
 } from './constants.js';
+import {
+  filterArchiveEvents,
+  groupEventsByLocation,
+  stockholmDateKey,
+} from '../../src/lib/eventArchives.js';
 
 const DEFAULT_DESCRIPTION = 'Musik, konst och kreativa mötesplatser i Amazon, Flen.';
+const ARCHIVE_LABELS = {
+  all: 'Evenemang',
+  upcoming: 'Kommande Evenemang',
+  past: 'Tidigare Evenemang',
+  locations: 'Platser',
+};
 
-export function resolveSeoPage(pathname, snapshot, origin) {
+export function resolveSeoPage(pathname, snapshot, origin, options = {}) {
   const canonicalPath = normalizePath(pathname);
   const siteTitle = snapshot?.global?.siteTitle || ORGANIZATION_NAME;
   const base = {
@@ -91,6 +102,39 @@ export function resolveSeoPage(pathname, snapshot, origin) {
       title: pageTitle('Administration', siteTitle),
       noindex: true,
       visibleText: [],
+    });
+  }
+
+  if (
+    canonicalPath === '/events'
+    || canonicalPath === '/events/upcoming'
+    || canonicalPath === '/events/past'
+  ) {
+    const archiveMode = canonicalPath === '/events/upcoming'
+      ? 'upcoming'
+      : canonicalPath === '/events/past'
+        ? 'past'
+        : 'all';
+    return eventArchivePage({
+      base,
+      siteTitle,
+      snapshot,
+      archiveMode,
+      today: options.today || stockholmDateKey(),
+    });
+  }
+
+  if (canonicalPath === '/locations') {
+    return locationIndexPage({ base, siteTitle, snapshot });
+  }
+
+  if (canonicalPath.startsWith('/locations/')) {
+    const locationSlug = canonicalPath.slice('/locations/'.length);
+    return locationPage({
+      base,
+      siteTitle,
+      snapshot,
+      locationSlug,
     });
   }
 
@@ -315,6 +359,118 @@ export function resolveSeoPage(pathname, snapshot, origin) {
   return unknownPage(base, siteTitle);
 }
 
+function eventArchivePage({
+  base,
+  siteTitle,
+  snapshot,
+  archiveMode,
+  today,
+}) {
+  const events = filterArchiveEvents(snapshot, archiveMode, today);
+  const label = ARCHIVE_LABELS[archiveMode];
+  const ownerNames = ownerNamesForEvents(events, snapshot);
+  const intentConcepts = intentConceptsForEvents(events, snapshot);
+  return finalize({
+    ...base,
+    kind: 'event-archive',
+    archiveMode,
+    title: pageTitle(label, siteTitle),
+    description: archiveDescription(label, events, ownerNames, intentConcepts, base.description),
+    image: archiveImage(events, base.image),
+    breadcrumbs: [
+      ...base.breadcrumbs,
+      { name: label, path: base.canonicalPath },
+    ],
+    events,
+    ownerNames,
+    intentConcepts,
+    noindex: events.length === 0,
+    visibleText: compact([
+      label,
+      ...events.flatMap(eventVisibleText),
+    ]),
+    lastModified: latestDate(events.map((event) => event.updatedAt)),
+  });
+}
+
+function locationIndexPage({ base, siteTitle, snapshot }) {
+  const locations = groupEventsByLocation(snapshot);
+  const events = locations.flatMap((location) => location.events);
+  const ownerNames = ownerNamesForEvents(events, snapshot);
+  const intentConcepts = intentConceptsForEvents(events, snapshot);
+  return finalize({
+    ...base,
+    kind: 'location-index',
+    title: pageTitle('Platser för evenemang', siteTitle),
+    description: locationDescription(
+      'Platser för publicerade evenemang',
+      events,
+      ownerNames,
+      intentConcepts,
+      base.description,
+    ),
+    image: archiveImage(events, base.image),
+    breadcrumbs: [
+      ...base.breadcrumbs,
+      { name: ARCHIVE_LABELS.locations, path: base.canonicalPath },
+    ],
+    locations,
+    events,
+    ownerNames,
+    intentConcepts,
+    noindex: locations.length === 0,
+    visibleText: compact([
+      ARCHIVE_LABELS.locations,
+      ...locations.flatMap((location) => [
+        location.name,
+        ...location.events.flatMap(eventVisibleText),
+      ]),
+    ]),
+    lastModified: latestDate(events.map((event) => event.updatedAt)),
+  });
+}
+
+function locationPage({
+  base,
+  siteTitle,
+  snapshot,
+  locationSlug,
+}) {
+  const location = groupEventsByLocation(snapshot)
+    .find((group) => group.slug === locationSlug);
+  if (!location) return unknownPage(base, siteTitle);
+
+  const ownerNames = ownerNamesForEvents(location.events, snapshot);
+  const intentConcepts = intentConceptsForEvents(location.events, snapshot);
+  return finalize({
+    ...base,
+    kind: 'location',
+    title: pageTitle(`${location.name} – Evenemang`, siteTitle),
+    description: locationDescription(
+      `Publicerade evenemang på ${location.name}`,
+      location.events,
+      ownerNames,
+      intentConcepts,
+      base.description,
+    ),
+    image: archiveImage(location.events, base.image),
+    breadcrumbs: [
+      ...base.breadcrumbs,
+      { name: ARCHIVE_LABELS.locations, path: '/locations' },
+      { name: location.name, path: base.canonicalPath },
+    ],
+    location,
+    events: location.events,
+    ownerNames,
+    intentConcepts,
+    visibleText: compact([
+      location.name,
+      ...location.events.flatMap(eventVisibleText),
+    ]),
+    lastModified: latestDate(location.events.map((event) => event.updatedAt)),
+  });
+}
+
 function eventListPage({
   base,
   siteTitle,
@@ -467,6 +623,122 @@ function visibleMediaText(owner) {
     ...(owner.galleryImages || []).map((image) => image.caption || image.alt),
     ...(owner.videos || []).map((video) => video.title),
   ];
+}
+
+function eventVisibleText(event) {
+  return [
+    event.title,
+    event.date,
+    event.time,
+    event.location,
+    event.description,
+  ];
+}
+
+function ownerNamesForEvents(events, snapshot) {
+  const names = [];
+  for (const event of events) {
+    const section = event.section || (snapshot?.sections || [])
+      .find((item) => item.id === event.sectionId);
+    const child = event.childPageId
+      ? (section?.childPages || []).find((item) => item.id === event.childPageId)
+      : null;
+    const name = child?.title || section?.title;
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
+function intentConceptsForEvents(events, snapshot) {
+  const text = events.map((event) => {
+    const section = event.section || (snapshot?.sections || [])
+      .find((item) => item.id === event.sectionId);
+    const child = event.childPageId
+      ? (section?.childPages || []).find((item) => item.id === event.childPageId)
+      : null;
+    return [
+      event.title,
+      event.description,
+      section?.title,
+      section?.shortDescription,
+      section?.fullDescription,
+      section?.practicalInfo,
+      child?.title,
+      child?.shortDescription,
+      child?.body,
+      ...(section?.galleryImages || []).map((image) => image.caption),
+      ...(section?.videos || []).map((video) => video.title),
+      ...(child?.galleryImages || []).map((image) => image.caption),
+      ...(child?.videos || []).map((video) => video.title),
+    ].filter(Boolean).join(' ');
+  }).join(' ').toLowerCase();
+
+  const concepts = [];
+  if (/flen\s*världsorkester|världsmusik|musik över alla gränser/.test(text)) {
+    concepts.push(
+      'Flen Världsorkester',
+      'världsmusik Sverige',
+      'world music Sweden',
+    );
+  }
+  if (/musaik/.test(text)) {
+    concepts.push('MUSAIK');
+  }
+  if (/folk\s*&\s*kultur|festival/.test(text)) {
+    concepts.push('festival music Sweden', 'orchestra for cultural festivals');
+  }
+  if (/flen\s*världsorkester|världsmusik|musik över alla gränser/.test(text)) {
+    concepts.push('live world music performance');
+  }
+  if (/musaik/.test(text)) {
+    concepts.push('intercultural music project');
+  }
+  if (/olika bakgrunder|alla gränser|hela världen|mångkultur/.test(text)) {
+    concepts.push('multicultural orchestra Sweden');
+  }
+  if (/gemenskap|öppen för alla|förenar/.test(text)) {
+    concepts.push('community orchestra Sweden');
+  }
+  if (/kulturskol|skol/.test(text)) {
+    concepts.push('school and community music project');
+  }
+  if (events.length && /musik|orkester|konsert|jazz/.test(text)) {
+    concepts.push('live music act Sweden', 'cultural music performance');
+  }
+
+  return [...new Set(concepts)].slice(0, 6);
+}
+
+function archiveDescription(label, events, ownerNames, concepts, fallback) {
+  if (!events.length) return fallback;
+  const owners = joinNames(ownerNames);
+  const subject = concepts.includes('världsmusik Sverige')
+    ? 'världsmusik och kulturella musikframträdanden'
+    : 'kulturevenemang';
+  return cleanDescription(
+    `${label} med ${owners || 'Kulturföreningen Flen Världsorkester'}: ${subject} i Sverige.`,
+  );
+}
+
+function locationDescription(prefix, events, ownerNames, concepts, fallback) {
+  if (!events.length) return fallback;
+  const owners = joinNames(ownerNames);
+  const subject = concepts.includes('världsmusik Sverige')
+    ? 'världsmusik och kulturella musikframträdanden'
+    : 'kulturevenemang';
+  return cleanDescription(
+    `${prefix} med ${owners || 'Kulturföreningen Flen Världsorkester'} – ${subject} i Sverige.`,
+  );
+}
+
+function joinNames(values) {
+  if (values.length < 2) return values[0] || '';
+  return `${values.slice(0, -1).join(', ')} och ${values.at(-1)}`;
+}
+
+function archiveImage(events, fallback) {
+  const event = events.find((item) => item.image || item.section?.coverImage);
+  return event?.image || event?.section?.coverImage || fallback;
 }
 
 function normalizePath(pathname) {

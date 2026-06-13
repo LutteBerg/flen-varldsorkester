@@ -163,6 +163,10 @@ test('Markdown text is identical to noscript text for every route kind', () => {
     '/flen-varldsorkester/evenemang/event-summer',
     '/jazz-world-music-club/nyheter',
     '/flen-varldsorkester/galleri',
+    '/events',
+    '/events/upcoming',
+    '/locations',
+    '/locations/amazon-parkgatan-3-flen',
     '/missing',
     '/admin/login',
   ];

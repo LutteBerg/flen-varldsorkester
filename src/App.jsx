@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
@@ -10,6 +10,8 @@ import EventDetail from './pages/EventDetail'
 import NewsList from './pages/NewsList'
 import GalleryPage from './pages/GalleryPage'
 import ChildPage from './pages/ChildPage'
+import EventArchive from './pages/EventArchive'
+import LocationArchive from './pages/LocationArchive'
 
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminLogin = lazy(() => import('./pages/admin/Login'))
@@ -30,6 +32,11 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/events" element={<EventArchive mode="all" />} />
+          <Route path="/events/upcoming" element={<EventArchive mode="upcoming" />} />
+          <Route path="/events/past" element={<EventArchive mode="past" />} />
+          <Route path="/locations" element={<LocationArchive />} />
+          <Route path="/locations/:locationSlug" element={<LocationArchive />} />
 
           <Route path="/:slug/evenemang" element={<EventList />} />
           <Route path="/:slug/evenemang/:eventId" element={<EventDetail />} />

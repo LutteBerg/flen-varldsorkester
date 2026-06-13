@@ -99,6 +99,7 @@ export const seoFixture = {
       sectionId: 'section-fvo',
       childPageId: null,
       image: '/assets/fvo/alma-orkester.JPG',
+      status: 'published',
       updatedAt: '2026-06-08T10:00:00.000Z',
     },
     {
@@ -111,6 +112,7 @@ export const seoFixture = {
       sectionId: 'section-fvo',
       childPageId: 'child-musaik',
       image: '',
+      status: 'published',
       updatedAt: '2026-06-09T10:00:00.000Z',
     },
   ],

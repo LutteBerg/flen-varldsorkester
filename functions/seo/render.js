@@ -125,6 +125,14 @@ export function renderJsonLd(page) {
     });
   }
 
+  if (
+    page.kind === 'event-archive'
+    || page.kind === 'location-index'
+    || page.kind === 'location'
+  ) {
+    addArchiveSchemas(graph, page, organizationId, websiteId);
+  }
+
   if (page.kind === 'news-list') {
     graph.push(...page.news.map((news) => newsSchema(news, page, organizationId)));
   }
@@ -271,6 +279,29 @@ function renderNoscriptBody(page) {
         paragraph(page.event.description),
         '</article>',
       ].join('');
+    case 'event-archive':
+      return [
+        `<article><h1>${escapeHtml(eventArchiveHeading(page.archiveMode))}</h1>`,
+        ...page.events.map(renderArchiveEventSummary),
+        '</article>',
+      ].join('');
+    case 'location-index':
+      return [
+        '<article><h1>Platser</h1>',
+        ...page.locations.map((location) => [
+          '<section>',
+          `<h2><a href="/locations/${escapeHtml(location.slug)}">${escapeHtml(location.name)}</a></h2>`,
+          ...location.events.map(renderArchiveEventSummary),
+          '</section>',
+        ].join('')),
+        '</article>',
+      ].join('');
+    case 'location':
+      return [
+        `<article><h1>${escapeHtml(page.location.name)}</h1>`,
+        ...page.events.map(renderArchiveEventSummary),
+        '</article>',
+      ].join('');
     case 'news-list':
       return [
         `<article><h1>${escapeHtml(STATIC_LABELS.newsTitle)}</h1>`,
@@ -366,6 +397,16 @@ function renderEventSummary(event, sectionSlug) {
   ].join('');
 }
 
+function renderArchiveEventSummary(event) {
+  return [
+    '<article>',
+    `<h2><a href="${escapeHtml(event.detailPath)}">${escapeHtml(event.title)}</a></h2>`,
+    renderEventMeta(event),
+    paragraph(event.description),
+    '</article>',
+  ].join('');
+}
+
 function renderEventMeta(event) {
   return [
     event.date
@@ -394,7 +435,11 @@ function renderMedia(owner) {
 }
 
 function eventSchema(event, page, organizationId) {
-  const sectionSlug = page.section.slug;
+  const section = event.section
+    || page.section
+    || (page.snapshot?.sections || []).find((item) => item.id === event.sectionId);
+  if (!section) return null;
+  const sectionSlug = section.slug;
   const eventUrl = absoluteUrl(
     `/${sectionSlug}/evenemang/${encodeURIComponent(event.id)}`,
     page.origin,
@@ -412,7 +457,7 @@ function eventSchema(event, page, organizationId) {
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     url: eventUrl,
     description: event.description || undefined,
-    image: [absoluteUrl(event.image || page.image, page.origin)],
+    image: [absoluteUrl(event.image || section.coverImage || page.image, page.origin)],
     location: {
       '@type': 'Place',
       name: event.location || 'Amazon',
@@ -441,6 +486,85 @@ function eventSchema(event, page, organizationId) {
       }
       : {}),
   };
+}
+
+function addArchiveSchemas(graph, page, organizationId, websiteId) {
+  const collectionId = `${page.canonicalUrl}#webpage`;
+  const itemListId = `${page.canonicalUrl}#items`;
+  const concepts = page.intentConcepts || [];
+  graph.push({
+    '@type': 'CollectionPage',
+    '@id': collectionId,
+    url: page.canonicalUrl,
+    name: page.title,
+    description: page.description,
+    inLanguage: 'sv-SE',
+    isPartOf: { '@id': websiteId },
+    about: concepts.map((name) => ({ '@type': 'Thing', name })),
+    keywords: concepts,
+    mainEntity: { '@id': itemListId },
+  });
+
+  if (page.kind === 'location-index') {
+    const places = page.locations.map((location) => ({
+      '@type': 'Place',
+      '@id': absoluteUrl(`/locations/${location.slug}#place`, page.origin),
+      name: location.name,
+      url: absoluteUrl(`/locations/${location.slug}`, page.origin),
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: location.name,
+        addressCountry: 'SE',
+      },
+    }));
+    graph.push(...places);
+    graph.push({
+      '@type': 'ItemList',
+      '@id': itemListId,
+      name: page.title,
+      itemListElement: places.map((place, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: { '@id': place['@id'] },
+      })),
+    });
+    return;
+  }
+
+  if (page.kind === 'location') {
+    graph.push({
+      '@type': 'Place',
+      '@id': `${page.canonicalUrl}#place`,
+      name: page.location.name,
+      url: page.canonicalUrl,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: page.location.name,
+        addressCountry: 'SE',
+      },
+    });
+  }
+
+  const events = page.events
+    .map((event) => eventSchema(event, page, organizationId))
+    .filter(Boolean);
+  graph.push(...events);
+  graph.push({
+    '@type': 'ItemList',
+    '@id': itemListId,
+    name: page.title,
+    itemListElement: events.map((event, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: { '@id': event['@id'] },
+    })),
+  });
+}
+
+function eventArchiveHeading(mode) {
+  if (mode === 'upcoming') return 'Kommande Evenemang';
+  if (mode === 'past') return 'Tidigare Evenemang';
+  return 'Evenemang';
 }
 
 function newsSchema(news, page, organizationId) {
