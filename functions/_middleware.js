@@ -69,6 +69,15 @@ export const onRequest = async (ctx) => {
   const headers = new Headers(response.headers);
   if (page.noindex) {
     headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  } else {
+    // Advertise the Markdown representation available at this same URL via
+    // Accept negotiation (see markdownResponse below) so agents/LLMs can
+    // discover it. RFC 8288 Link header, IANA-registered rel="alternate".
+    // append (not set) preserves any Link Cloudflare may already emit.
+    headers.append(
+      'Link',
+      `<${page.canonicalUrl}>; rel="alternate"; type="text/markdown"`,
+    );
   }
   const htmlResponse = new Response(response.body, {
     status: response.status,
