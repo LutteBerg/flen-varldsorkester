@@ -2,6 +2,7 @@
 
 import { readSessionCookie, verifySessionToken } from './lib/auth.js';
 import { ORGANIZATION_NAME, SITE_ORIGIN } from './seo/constants.js';
+import { prefersMarkdown, renderMarkdown } from './seo/markdown.js';
 import { createHtmlRewriterHandlers } from './seo/render.js';
 import { resolveSeoPage } from './seo/routes.js';
 import {
@@ -34,18 +35,36 @@ export const onRequest = async (ctx) => {
   const response = await ctx.next();
   if (
     ctx.request.method !== 'GET'
+    || !isPublicPagePath(url.pathname)
     || !response.headers.get('Content-Type')?.includes('text/html')
   ) return response;
+
+  const markdownPreferred = prefersMarkdown(ctx.request.headers.get('Accept'));
+  if (
+    markdownPreferred
+    && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))
+  ) {
+    return markdownResponse(response, '', true);
+  }
 
   let snapshot;
   try {
     snapshot = await getPublishedSnapshot(ctx.env);
   } catch (error) {
     console.error('SEO snapshot unavailable:', error instanceof Error ? error.message : 'unknown');
+    if (markdownPreferred) return response;
     snapshot = fallbackSnapshot();
   }
 
   const page = resolveSeoPage(url.pathname, snapshot, SITE_ORIGIN);
+  if (markdownPreferred) {
+    return markdownResponse(
+      response,
+      page.noindex ? '' : renderMarkdown(page),
+      page.noindex,
+    );
+  }
+
   const handlers = createHtmlRewriterHandlers(page);
   const headers = new Headers(response.headers);
   if (page.noindex) {
@@ -67,6 +86,52 @@ export const onRequest = async (ctx) => {
     .on('#root', handlers.root)
     .transform(htmlResponse);
 };
+
+function isPublicPagePath(pathname) {
+  if (
+    pathname === '/api'
+    || pathname.startsWith('/api/')
+    || pathname === '/assets'
+    || pathname.startsWith('/assets/')
+    || pathname === '/media'
+    || pathname.startsWith('/media/')
+  ) return false;
+
+  const lastSegment = pathname.split('/').pop() || '';
+  return !lastSegment.includes('.');
+}
+
+function markdownResponse(response, body, noindex = false) {
+  const headers = new Headers(response.headers);
+  headers.set('Content-Type', 'text/markdown; charset=utf-8');
+  appendVary(headers, 'Accept');
+  headers.delete('Content-Length');
+  headers.delete('Content-Encoding');
+  headers.delete('ETag');
+  if (noindex) {
+    headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
+
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function appendVary(headers, value) {
+  const current = headers.get('Vary');
+  if (!current) {
+    headers.set('Vary', value);
+    return;
+  }
+
+  const values = current.split(',').map((item) => item.trim());
+  if (values.includes('*')) return;
+  if (!values.some((item) => item.toLowerCase() === value.toLowerCase())) {
+    headers.set('Vary', `${current}, ${value}`);
+  }
+}
 
 export function isContentMutation(request) {
   const url = new URL(request.url);

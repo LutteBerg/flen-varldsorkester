@@ -12,7 +12,8 @@ Allow: /
 Disallow: /admin
 
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 Allow: /
 Disallow: /admin
 
-Sitemap: https://flen-varldsorkester.pages.dev/sitemap.xml
+Sitemap: https://flenvarldsorkester.se/sitemap.xml
