@@ -34,6 +34,49 @@ test('every React img reserves intrinsic space with width and height', async () 
   assert.deepEqual(missing, []);
 });
 
+test('public archive routes reuse existing event-card design without changing admin routes', async () => {
+  const [app, list, eventArchive, locationArchive] = await Promise.all([
+    readFile(new URL('../src/App.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/EventArchiveList.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/pages/EventArchive.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/pages/LocationArchive.jsx', import.meta.url), 'utf8'),
+  ]);
+
+  for (const route of [
+    '/events',
+    '/events/upcoming',
+    '/events/past',
+    '/locations',
+    '/locations/:locationSlug',
+  ]) {
+    assert.match(app, new RegExp(`path="${escapeRegExp(route)}"`));
+  }
+
+  for (const adminRoute of [
+    '/admin/login',
+    '/admin',
+    'global',
+    'sections',
+    'child-pages',
+    'news',
+    'events',
+  ]) {
+    assert.match(app, new RegExp(`path="${escapeRegExp(adminRoute)}"`));
+  }
+
+  assert.match(list, /className="events-list"/);
+  assert.match(list, /className="designed-event-card event-card-link"/);
+  assert.match(list, /to=\{event\.detailPath\}/);
+  assert.match(list, /event\.title/);
+  assert.match(list, /event\.date/);
+  assert.match(list, /event\.time/);
+  assert.match(list, /event\.location/);
+  assert.match(list, /event\.description/);
+  assert.match(eventArchive, /filterArchiveEvents/);
+  assert.match(locationArchive, /groupEventsByLocation/);
+  assert.doesNotMatch(app, /pages\/admin\/.*Archive/);
+});
+
 async function collectFiles(directory, extension) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -43,4 +86,8 @@ async function collectFiles(directory, extension) {
     else if (entry.name.endsWith(extension)) files.push(url);
   }
   return files;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

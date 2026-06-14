@@ -65,6 +65,36 @@ export function renderMarkdown(page) {
         heading(1, page.event.title),
         ...eventDetails(page.event),
       ]);
+    case 'event-archive':
+      return joinBlocks([
+        heading(1, eventArchiveHeading(page.archiveMode)),
+        ...page.events.flatMap((event) => renderEvent(
+          event,
+          event.detailPath,
+        )),
+      ]);
+    case 'location-index':
+      return joinBlocks([
+        heading(1, 'Platser'),
+        ...page.locations.flatMap((location) => [
+          heading(2, link(
+            location.name,
+            routePath('locations', location.slug),
+          )),
+          ...location.events.flatMap((event) => renderEvent(
+            event,
+            event.detailPath,
+          )),
+        ]),
+      ]);
+    case 'location':
+      return joinBlocks([
+        heading(1, page.location.name),
+        ...page.events.flatMap((event) => renderEvent(
+          event,
+          event.detailPath,
+        )),
+      ]);
     case 'news-list':
       return joinBlocks([
         heading(1, STATIC_LABELS.newsTitle),
@@ -161,6 +191,12 @@ function renderMedia(owner, { includeHeading = true } = {}) {
     )),
     ...videos.map((video) => heading(3, video.title)),
   ];
+}
+
+function eventArchiveHeading(mode) {
+  if (mode === 'upcoming') return 'Kommande Evenemang';
+  if (mode === 'past') return 'Tidigare Evenemang';
+  return 'Evenemang';
 }
 
 function parseAccept(acceptHeader) {

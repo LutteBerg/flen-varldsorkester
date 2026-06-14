@@ -9,6 +9,7 @@ import {
   getPublishedSnapshot,
   invalidatePublishedSnapshot,
 } from '../functions/seo/snapshot-cache.js';
+import { SITE_ORIGIN } from '../functions/seo/constants.js';
 import { seoFixture } from './seo-fixture.js';
 
 test('recognizes only content-changing admin requests', () => {
@@ -92,6 +93,34 @@ test('keeps the existing HTMLRewriter path for browser requests', async () => {
     assert.equal(response.headers.get('Content-Type'), 'text/html; charset=utf-8');
     assert.equal(response.headers.get('X-Test-HTMLRewriter'), 'used');
     assert.equal(await response.text(), '<!doctype html><title>Baseline</title><div id="root"></div>');
+  } finally {
+    globalThis.HTMLRewriter = previousRewriter;
+  }
+});
+
+test('advertises the Markdown representation via an RFC 8288 Link header on indexable pages', async () => {
+  await seedSnapshot();
+  const previousRewriter = globalThis.HTMLRewriter;
+  globalThis.HTMLRewriter = FakeHTMLRewriter;
+  try {
+    const indexable = await onRequest(createContext({
+      pathname: '/flen-varldsorkester',
+      accept: 'text/html,application/xhtml+xml',
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    }));
+    assert.equal(
+      indexable.headers.get('Link'),
+      `<${SITE_ORIGIN}/flen-varldsorkester>; rel="alternate"; type="text/markdown"`,
+    );
+
+    // noindex routes (admin, unknown) must not advertise an alternate.
+    const admin = await onRequest(createContext({
+      pathname: '/admin/login',
+      accept: 'text/html',
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    }));
+    assert.equal(admin.headers.get('Link'), null);
+    assert.equal(admin.headers.get('X-Robots-Tag'), 'noindex, nofollow, noarchive');
   } finally {
     globalThis.HTMLRewriter = previousRewriter;
   }

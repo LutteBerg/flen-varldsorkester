@@ -1,7 +1,14 @@
 import { resolveSeoPage } from './routes.js';
+import {
+  filterArchiveEvents,
+  groupEventsByLocation,
+  indexableEvents,
+  stockholmDateKey,
+} from '../../src/lib/eventArchives.js';
 
-export function collectSitemapEntries(snapshot, origin) {
+export function collectSitemapEntries(snapshot, origin, options = {}) {
   const paths = ['/', '/about', '/contact'];
+  const today = options.today || stockholmDateKey();
 
   for (const section of snapshot?.sections || []) {
     const sectionPath = `/${section.slug}`;
@@ -18,16 +25,29 @@ export function collectSitemapEntries(snapshot, origin) {
     }
   }
 
-  for (const event of snapshot?.events || []) {
-    const section = (snapshot.sections || [])
-      .find((item) => item.id === event.sectionId);
-    if (section) {
-      paths.push(`/${section.slug}/evenemang/${encodeURIComponent(event.id)}`);
-    }
+  const events = indexableEvents(snapshot);
+  for (const event of events) {
+    paths.push(event.detailPath);
+  }
+
+  if (events.length) {
+    paths.push('/events');
+  }
+  if (filterArchiveEvents(snapshot, 'upcoming', today).length) {
+    paths.push('/events/upcoming');
+  }
+  if (filterArchiveEvents(snapshot, 'past', today).length) {
+    paths.push('/events/past');
+  }
+
+  const locations = groupEventsByLocation(snapshot);
+  if (locations.length) {
+    paths.push('/locations');
+    paths.push(...locations.map((location) => `/locations/${location.slug}`));
   }
 
   return [...new Set(paths)].map((path) => {
-    const page = resolveSeoPage(path, snapshot, origin);
+    const page = resolveSeoPage(path, snapshot, origin, { today });
     return {
       loc: page.canonicalUrl,
       lastmod: page.lastModified,
@@ -35,8 +55,8 @@ export function collectSitemapEntries(snapshot, origin) {
   });
 }
 
-export function renderSitemapXml(snapshot, origin) {
-  const entries = collectSitemapEntries(snapshot, origin);
+export function renderSitemapXml(snapshot, origin, options = {}) {
+  const entries = collectSitemapEntries(snapshot, origin, options);
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
