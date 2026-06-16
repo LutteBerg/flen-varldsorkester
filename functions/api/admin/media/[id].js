@@ -81,7 +81,9 @@ export const onRequestPut = wrap(async ({ params, request, env }) => {
 export const onRequestDelete = wrap(async ({ params, env }) => {
   const db = requireDb(env);
   const id = params.id;
-  const existing = await db.prepare(`SELECT id, object_key FROM media_items WHERE id = ?1`).bind(id).first();
+  const existing = await db.prepare(
+    `SELECT id, object_key, url, section_id, child_page_id FROM media_items WHERE id = ?1`
+  ).bind(id).first();
   if (!existing) return error(404, 'Media item not found');
 
   // If this row references an R2-stored upload, drop the underlying object
@@ -95,9 +97,27 @@ export const onRequestDelete = wrap(async ({ params, env }) => {
     }
   }
 
+  await clearCoverReferences(db, existing);
   await db.prepare(`DELETE FROM media_items WHERE id = ?1`).bind(id).run();
   return noContent();
 });
+
+export async function clearCoverReferences(db, media) {
+  if (!media?.url) return;
+  if (media.section_id) {
+    await db.prepare(
+      `UPDATE sections SET cover_image = '', updated_at = ?1
+        WHERE id = ?2 AND cover_image = ?3`
+    ).bind(nowIso(), media.section_id, media.url).run();
+    return;
+  }
+  if (media.child_page_id) {
+    await db.prepare(
+      `UPDATE child_pages SET cover_image = '', updated_at = ?1
+        WHERE id = ?2 AND cover_image = ?3`
+    ).bind(nowIso(), media.child_page_id, media.url).run();
+  }
+}
 
 function stringOr(v, fallback) {
   return typeof v === 'string' ? v : fallback;

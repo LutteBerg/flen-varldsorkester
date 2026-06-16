@@ -47,6 +47,7 @@ export default function Sections() {
       const res = await contentRepository.uploadMedia(file, {
         sectionId: editing.id,
         title: file.name.replace(/\.[^.]+$/, ''),
+        status: 'draft',
       });
       const m = res.media || {};
       const url = res.url || m.url;
