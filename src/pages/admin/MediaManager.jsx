@@ -186,6 +186,34 @@ function TabBtn({ active, onClick, children }) {
   );
 }
 
+// Small preview so the admin recognizes an item without relying on its title.
+// Images use their own src; YouTube videos use the thumbnail served by YouTube.
+function MediaThumb({ item, isVideo }) {
+  const src = isVideo
+    ? (item.videoId ? `https://i.ytimg.com/vi/${item.videoId}/default.jpg` : '')
+    : (item.src || item.url || '');
+
+  if (!src) {
+    return (
+      <span
+        aria-hidden="true"
+        style={{ flex: '0 0 auto', width: 64, height: 48, borderRadius: 4, background: '#eee', border: '1px solid #ddd' }}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      width={64}
+      height={48}
+      loading="lazy"
+      style={{ flex: '0 0 auto', width: 64, height: 48, objectFit: 'cover', borderRadius: 4, border: '1px solid #ddd', background: '#000' }}
+    />
+  );
+}
+
 // ── Existing-item row ──────────────────────────────────────────────────────
 function MediaRow({ item, isEditing, onStartEdit, onCancelEdit, onSaved, onChange, readOnly }) {
   const isVideo = !!item.videoId;
@@ -204,6 +232,7 @@ function MediaRow({ item, isEditing, onStartEdit, onCancelEdit, onSaved, onChang
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #eee' }}>
+      <MediaThumb item={item} isVideo={isVideo} />
       <span style={{ flex: 1, fontSize: '0.9rem', minWidth: 0, overflowWrap: 'anywhere' }}>
         <strong>{isVideo ? 'Video' : 'Bild'}:</strong> {label || '(utan titel)'}
         {item.pinned && <span style={{ color: 'var(--color-orange)', marginLeft: 8, fontWeight: 600 }}>(fäst)</span>}

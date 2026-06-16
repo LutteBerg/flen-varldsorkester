@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { contentRepository } from '../../lib/cms/contentRepository';
 import { MediaAssignmentSection } from './ChildPages';
+
+const COVER_ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
+const COVER_MAX_BYTES = 10 * 1024 * 1024; // 10 MB — keep in sync with the upload endpoint
 
 export default function Sections() {
   const [sections, setSections] = useState([]);
@@ -8,6 +11,7 @@ export default function Sections() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [coverUploading, setCoverUploading] = useState(false);
   const readOnly = contentRepository.isReadOnly();
 
   useEffect(() => { load(); }, []);
@@ -30,6 +34,33 @@ export default function Sections() {
 
   function handleChange(field, value) {
     setEditing(prev => ({ ...prev, [field]: value }));
+  }
+
+  // Upload a file straight into this section's media library AND set it as the
+  // cover image. We update state in place (no full reload) so unsaved text edits
+  // are preserved; the new image also shows up in the picker thumbnails and the
+  // media list below, since both derive from editing.galleryImages.
+  async function handleCoverUpload(file) {
+    setError('');
+    setCoverUploading(true);
+    try {
+      const res = await contentRepository.uploadMedia(file, {
+        sectionId: editing.id,
+        title: file.name.replace(/\.[^.]+$/, ''),
+      });
+      const m = res.media || {};
+      const url = res.url || m.url;
+      const thumb = { id: m.id || url, src: url, title: m.title || '', alt: m.alt || '' };
+      setEditing(prev => ({
+        ...prev,
+        coverImage: url,
+        galleryImages: [...(prev.galleryImages || []), thumb],
+      }));
+    } catch (e) {
+      setError(e.message || String(e));
+    } finally {
+      setCoverUploading(false);
+    }
   }
 
   async function handleSave() {
@@ -84,6 +115,9 @@ export default function Sections() {
               value={editing.coverImage || ''}
               images={editing.galleryImages || []}
               onChange={(url) => handleChange('coverImage', url)}
+              onUpload={handleCoverUpload}
+              uploading={coverUploading}
+              readOnly={readOnly}
             />
             <p style={{fontSize: '0.85rem', color: '#666', marginTop: 8}}>För video, lägg till en video nedan och markera "Fäst överst".</p>
           </div>
@@ -167,12 +201,30 @@ export default function Sections() {
 }
 
 // Visual picker for a section's cover image (the photo shown on the start page).
-// Reuses the images already uploaded to this section's media library below — the
-// admin uploads via the media panel, then clicks a thumbnail here to make it the
-// cover. The manual URL field is kept for legacy /assets/... paths and advanced
-// use, so the previous "type a path" behaviour still works unchanged.
-function CoverImagePicker({ value, images, onChange }) {
+// Three ways to set it: upload a new photo directly (button below), click an
+// image already in the section's library, or type a URL manually (kept for
+// legacy /assets/... paths). The preview uses object-fit: contain so the real
+// aspect ratio is preserved — no horizontal stretching.
+function CoverImagePicker({ value, images, onChange, onUpload, uploading, readOnly }) {
   const imageList = (images || []).filter((img) => img && img.src);
+  const fileInputRef = useRef(null);
+  const [pickError, setPickError] = useState('');
+
+  async function onPickFile(e) {
+    setPickError('');
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    if (!COVER_ACCEPT.includes(file.type)) {
+      setPickError('Endast JPG, PNG och WebP stöds.');
+      return;
+    }
+    if (file.size > COVER_MAX_BYTES) {
+      setPickError('Filen är för stor (max 10 MB).');
+      return;
+    }
+    if (onUpload) await onUpload(file);
+  }
 
   return (
     <div>
@@ -183,7 +235,7 @@ function CoverImagePicker({ value, images, onChange }) {
             alt="Vald omslagsbild"
             width="1600"
             height="900"
-            style={{ maxWidth: '100%', height: 'auto', maxHeight: 200, borderRadius: 6, border: '1px solid #ddd', display: 'block' }}
+            style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: 220, objectFit: 'contain', borderRadius: 6, border: '1px solid #ddd' }}
           />
         </div>
       ) : (
@@ -192,10 +244,32 @@ function CoverImagePicker({ value, images, onChange }) {
         </p>
       )}
 
+      {/* Direct upload — the primary, easiest way to set a cover photo. */}
+      {pickError && <div className="admin-login-error">{pickError}</div>}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={COVER_ACCEPT.join(',')}
+        onChange={onPickFile}
+        disabled={readOnly || uploading}
+        style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      <button
+        type="button"
+        className="btn-primary"
+        style={{ marginBottom: 12, fontSize: '0.9rem', padding: '8px 16px' }}
+        onClick={() => fileInputRef.current?.click()}
+        disabled={readOnly || uploading}
+      >
+        {uploading ? 'Laddar upp…' : 'Ladda upp foto som omslagsbild'}
+      </button>
+
       {imageList.length > 0 ? (
         <>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '0 0 8px' }}>
-            Klicka på en bild från sektionens bildbibliotek för att använda den som omslagsbild:
+            Eller klicka på en bild från sektionens bildbibliotek:
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             {imageList.map((img) => {
@@ -230,7 +304,7 @@ function CoverImagePicker({ value, images, onChange }) {
         </>
       ) : (
         <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
-          Inga bilder uppladdade i den här sektionen ännu. Ladda upp en bild i mediabiblioteket längre ner på sidan, så kan du välja den som omslagsbild här.
+          Inga bilder uppladdade i den här sektionen ännu. Använd knappen ovan för att ladda upp en.
         </p>
       )}
 
