@@ -50,6 +50,8 @@ export default function Sections() {
       });
       const m = res.media || {};
       const url = res.url || m.url;
+      if (!url) throw new Error('Uppladdningen saknar bild-URL.');
+      await contentRepository.updateSection(editing.id, { coverImage: url });
       const thumb = { id: m.id || url, src: url, title: m.title || '', alt: m.alt || '' };
       setEditing(prev => ({
         ...prev,
