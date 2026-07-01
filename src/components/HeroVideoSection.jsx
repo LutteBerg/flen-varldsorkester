@@ -31,6 +31,7 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
+  const iframeRef = useRef(null);
   // Once the visitor takes manual control (pause / mute / restart) OR the
   // page pauses the hero from outside (e.g. a gallery video opens), we stop
   // the scroll/gesture auto-unmute+autoplay so the video STAYS stopped/muted
@@ -119,13 +120,37 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     setReloadKey((k) => k + 1);
   }
 
+  // Kick MUTED playback as soon as the iframe is ready. The URL already carries
+  // autoplay=1&mute=1, but browsers honor autoplay for third-party iframes only
+  // intermittently — an explicit playVideo via the IFrame API (enablejsapi=1)
+  // makes the muted autostart reliable. We NEVER send unMute here: audio stays
+  // off until the visitor presses the sound button. Fires on every (re)mount
+  // via the iframe key, and respects a manual pause (playing === false).
+  function startMutedPlayback() {
+    if (!playing) return;
+    const poke = () => {
+      const win = iframeRef.current?.contentWindow;
+      if (!win) return;
+      try {
+        win.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+      } catch { /* cross-origin postMessage must not throw, but be safe */ }
+    };
+    poke();
+    // Retry across the brief window where the player's message handler isn't
+    // listening yet on slower connections.
+    setTimeout(poke, 400);
+    setTimeout(poke, 1200);
+  }
+
   return (
     <>
     <section className={`hero-video-section hero-video-section--${variant}`}>
       <div className="hero-video-bg" aria-hidden="true">
         <iframe
+          ref={iframeRef}
           key={reloadKey}
           src={src}
+          onLoad={startMutedPlayback}
           title={video.title || 'Bakgrundsvideo'}
           frameBorder="0"
           allow="autoplay; encrypted-media; picture-in-picture"
