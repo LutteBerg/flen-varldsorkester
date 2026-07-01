@@ -19,9 +19,9 @@ import '../pages/Section.css';
 // caused the "sound first visit, no sound on reload" bug.
 //
 // Now both the parent section AND its child pages use HeroVideoSection,
-// with the same bottom-ribbon design and the same auto-unmute logic. The
-// only difference is `variant="light"`, which keeps the surrounding page
-// background white and removes the bottom divider.
+// with the same bottom-ribbon design and the same muted-autoplay + opt-in
+// sound button. The only difference is `variant="light"`, which keeps the
+// surrounding page background white and removes the bottom divider.
 
 export default function ChildPage() {
   const { slug, childSlug } = useParams();

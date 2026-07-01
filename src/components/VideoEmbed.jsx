@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { normalizeYouTubeUrl } from '../lib/youtube';
 
 // Reusable responsive 16:9 YouTube embed.
@@ -39,8 +39,8 @@ export default function VideoEmbed({ videoId, url, embedUrl, title = 'YouTube vi
   // dropped autoplay/mute/controls/rel — the symptom the old AUDIT_REPORT
   // flagged as P1. `appendParams` works whether `src` is bare or already has `?`.
   if (mode === 'background') {
-    // enablejsapi=1 lets us send commands (e.g. unMute) via postMessage once
-    // the user makes a gesture. Browsers silently mute autoplay without one.
+    // Autoplay is forced MUTED (browsers block autoplay-with-sound). We do
+    // NOT auto-unmute — sound is opt-in via the HeroVideoSection button.
     const bgSrc = appendParams(src, {
       enablejsapi: '1',
       autoplay: '1',
@@ -72,38 +72,14 @@ export default function VideoEmbed({ videoId, url, embedUrl, title = 'YouTube vi
   );
 }
 
-// Background-mode iframe + one-shot auto-unmute on first user gesture.
-// Browsers silently mute autoplay until the user interacts with the page,
-// so we keep the URL muted (so it actually starts) and post unMute on any
-// click / key / scroll / touch — feels "automatic with sound" to the user.
+// Background-mode iframe. Autoplays MUTED and stays muted — we never unmute
+// automatically on scroll/click/touch. (Public hero video now lives in
+// HeroVideoSection, which exposes an explicit opt-in "sound on" button.)
 function BackgroundVideoIframe({ src, title, className }) {
-  const iframeRef = useRef(null);
-
-  useEffect(() => {
-    const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
-    const unmute = () => {
-      const win = iframeRef.current?.contentWindow;
-      if (win) {
-        try {
-          win.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: '' }), '*');
-          win.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
-        } catch {
-          // postMessage to cross-origin iframe should not throw, but be safe.
-        }
-      }
-      events.forEach(ev => document.removeEventListener(ev, unmute, true));
-    };
-    events.forEach(ev =>
-      document.addEventListener(ev, unmute, { capture: true, passive: true })
-    );
-    return () => events.forEach(ev => document.removeEventListener(ev, unmute, true));
-  }, []);
-
   return (
     <div className={`video-hero-wrapper ${className}`}>
       <div className="video-hero-overlay" />
       <iframe
-        ref={iframeRef}
         className="video-hero-iframe"
         src={src}
         title={title}
