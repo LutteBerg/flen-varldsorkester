@@ -90,6 +90,11 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
 
   const muteParam = muted ? '1' : '0';
   const autoplayParam = playing ? '1' : '0';
+  // YouTube only accepts IFrame-API postMessage commands (our playVideo poke)
+  // when the embed URL's `origin` matches the parent page. Without it the
+  // command is dropped and the player sits on the poster with a red play
+  // button on mobile. Compute it at render (SPA — window is always present).
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const src =
     `https://www.youtube.com/embed/${id}` +
     `?autoplay=${autoplayParam}` +
@@ -100,7 +105,8 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     `&modestbranding=1` +
     `&rel=0` +
     `&playsinline=1` +
-    `&enablejsapi=1`;
+    `&enablejsapi=1` +
+    (origin ? `&origin=${encodeURIComponent(origin)}` : '');
 
   function toggleMute() {
     // Manual sound toggle = the visitor is in control now. Don't force play,
