@@ -52,7 +52,7 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     if (!video || !externalPaused) return;
     userControlledRef.current = true;
     setPlaying(false);
-    setReloadKey((k) => k + 1);
+    sendCommand('pauseVideo');
   }, [externalPaused, video]);
 
   if (!video) {
@@ -88,8 +88,13 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     );
   }
 
-  const muteParam = muted ? '1' : '0';
-  const autoplayParam = playing ? '1' : '0';
+  // The URL is intentionally FROZEN to muted autoplay. Mute/pause/restart are
+  // driven through IFrame-API postMessage commands instead of URL changes:
+  // deriving the URL from state remounted the iframe on every toggle, and a
+  // fresh iframe with mute=0&autoplay=1 never starts on iOS (autoplay with
+  // sound is blocked there), so tapping the sound button killed the video on
+  // iPhones. Commands keep the already-playing player alive.
+  //
   // YouTube only accepts IFrame-API postMessage commands (our playVideo poke)
   // when the embed URL's `origin` matches the parent page. Without it the
   // command is dropped and the player sits on the poster with a red play
@@ -97,8 +102,8 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const src =
     `https://www.youtube.com/embed/${id}` +
-    `?autoplay=${autoplayParam}` +
-    `&mute=${muteParam}` +
+    `?autoplay=1` +
+    `&mute=1` +
     `&loop=1` +
     `&playlist=${id}` +
     `&controls=0` +
@@ -108,22 +113,38 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
     `&enablejsapi=1` +
     (origin ? `&origin=${encodeURIComponent(origin)}` : '');
 
+  // Send an IFrame-API command to the live player. Must be called
+  // synchronously from the user's tap so iOS treats it as gesture-driven.
+  function sendCommand(func, args = []) {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    try {
+      win.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+    } catch { /* cross-origin postMessage must not throw, but be safe */ }
+  }
+
   function toggleMute() {
     // Manual sound toggle = the visitor is in control now. Don't force play,
     // and don't let scroll re-assert audio afterwards.
     userControlledRef.current = true;
+    if (muted) {
+      sendCommand('unMute');
+      sendCommand('setVolume', [100]);
+    } else {
+      sendCommand('mute');
+    }
     setMuted((m) => !m);
-    setReloadKey((k) => k + 1);
   }
   function togglePlay() {
     userControlledRef.current = true;
+    sendCommand(playing ? 'pauseVideo' : 'playVideo');
     setPlaying((p) => !p);
-    setReloadKey((k) => k + 1);
   }
   function restart() {
     userControlledRef.current = true;
+    sendCommand('seekTo', [0, true]);
+    sendCommand('playVideo');
     setPlaying(true);
-    setReloadKey((k) => k + 1);
   }
 
   // Kick MUTED playback as soon as the iframe is ready. The URL already carries
