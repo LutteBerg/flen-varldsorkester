@@ -7,32 +7,70 @@
 // Writes: all under /api/admin/* with credentials:'include' so the
 // HttpOnly session cookie is sent.
 
+// How long a public snapshot is trusted before a route mount refetches it.
+//
+// Background: the snapshot used to be cached in memory for the whole
+// lifetime of the tab. An editor who published something in the admin and
+// then clicked "Tillbaka till webbplatsen" (a client-side route change —
+// no page reload) kept seeing the content from when the tab was first
+// opened, sometimes hours old, and concluded that publishing was broken.
+// With a short TTL, any navigation after the TTL re-fetches /api/content,
+// so freshly published items appear within a minute.
+const PUBLIC_SNAPSHOT_TTL_MS = 60_000;
+
+// How old an embedded bootstrap may be before we distrust it entirely.
+//
+// The PWA service worker precaches index.html — including the
+// __PUBLIC_CONTENT__ script the middleware injected at SW-install time —
+// and then serves that frozen shell for every navigation until the next
+// deploy. So "the bootstrap was injected server-side" does NOT mean "the
+// bootstrap is fresh". The middleware stamps the payload with
+// __bootstrappedAt (see functions/seo/render.js); if the stamp is older
+// than the server-side snapshot cache TTL (300 s) — or missing, as in any
+// pre-stamp cached shell — the bootstrap is only used as a placeholder
+// and the first content read refetches /api/content (which the SW never
+// caches).
+const BOOTSTRAP_MAX_AGE_MS = 300_000;
+
 export class ApiAdapter {
   constructor() {
     this.isReadOnly = false;
-    this._publicSnapshot = readPublicContentBootstrap();
+    const bootstrap = readPublicContentBootstrap();
+    this._fetchedAt = bootstrapFetchedAt(bootstrap);
+    if (bootstrap) delete bootstrap.__bootstrappedAt;
+    this._publicSnapshot = bootstrap;
     this._publicPromise = null;
   }
 
+  _isStale() {
+    return (Date.now() - this._fetchedAt) > PUBLIC_SNAPSHOT_TTL_MS;
+  }
+
   async _public() {
-    if (this._publicSnapshot) return this._publicSnapshot;
+    if (this._publicSnapshot && !this._isStale()) return this._publicSnapshot;
     if (!this._publicPromise) {
       this._publicPromise = fetch('/api/content', { credentials: 'same-origin' })
         .then(async (r) => {
           if (!r.ok) throw new Error(`/api/content returned ${r.status}`);
           this._publicSnapshot = await r.json();
+          this._fetchedAt = Date.now();
           return this._publicSnapshot;
         })
         .catch((err) => {
-          this._publicPromise = null;
+          // Refresh failed (offline, server hiccup). If we still hold an
+          // older snapshot, serve that instead of breaking the page; the
+          // next navigation will try again since _fetchedAt is unchanged.
+          if (this._publicSnapshot) return this._publicSnapshot;
           throw err;
-        });
+        })
+        .finally(() => { this._publicPromise = null; });
     }
     return this._publicPromise;
   }
 
   _invalidate() {
     this._publicSnapshot = null;
+    this._fetchedAt = 0;
     this._publicPromise = null;
   }
 
@@ -230,4 +268,16 @@ function readPublicContentBootstrap() {
   return parsePublicContentBootstrap(
     document.getElementById('__PUBLIC_CONTENT__')?.textContent,
   );
+}
+
+// Decide what _fetchedAt a bootstrap snapshot deserves. Returns `now` when
+// the middleware's __bootstrappedAt stamp is present and recent (a live
+// server render), and 0 (= already stale, refetch on first read) when the
+// stamp is missing or old — the signature of a service-worker-replayed
+// shell. Exported for tests.
+export function bootstrapFetchedAt(snapshot, now = Date.now()) {
+  if (!snapshot) return 0;
+  const stamp = Date.parse(snapshot.__bootstrappedAt || '');
+  if (Number.isNaN(stamp)) return 0;
+  return Math.abs(now - stamp) <= BOOTSTRAP_MAX_AGE_MS ? now : 0;
 }

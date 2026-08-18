@@ -161,7 +161,14 @@ export function renderNoscript(page) {
 }
 
 export function renderContentBootstrap(snapshot) {
-  const json = JSON.stringify(snapshot).replace(/</g, '\\u003c');
+  // __bootstrappedAt stamps the payload with the injection time so the
+  // client can tell a live server render from a stale copy replayed by
+  // the PWA service worker (which precaches index.html — with this very
+  // script tag — at SW-install time and serves that frozen shell for
+  // every navigation until the next deploy). See bootstrapFetchedAt() in
+  // src/lib/cms/adapters/apiAdapter.js for the consuming side.
+  const payload = { ...snapshot, __bootstrappedAt: new Date().toISOString() };
+  const json = JSON.stringify(payload).replace(/</g, '\\u003c');
   return `<script type="application/json" id="__PUBLIC_CONTENT__">${json}</script>`;
 }
 

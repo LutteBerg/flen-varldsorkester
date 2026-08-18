@@ -190,3 +190,12 @@ test('content bootstrap serializes only JSON and neutralizes closing script tags
   assert.doesNotMatch(html, /<\/script><script>/);
   assert.match(html, /\\u003c\/script>/);
 });
+
+test('content bootstrap stamps the injection time for staleness detection', () => {
+  const html = renderContentBootstrap(structuredClone(seoFixture));
+  const payload = JSON.parse(html.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, ''));
+
+  assert.ok(payload.__bootstrappedAt, 'payload carries __bootstrappedAt');
+  const age = Math.abs(Date.now() - Date.parse(payload.__bootstrappedAt));
+  assert.ok(age < 5_000, `stamp is current (age ${age}ms)`);
+});
