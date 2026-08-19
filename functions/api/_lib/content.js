@@ -56,6 +56,9 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
       shortDescription: cp.short_description || '',
       body: cp.body || '',
       coverImage: cp.cover_image || '',
+      // Migration 0005: the video shown at the TOP of the page, chosen
+      // explicitly in admin. Empty/NULL = show the cover photo instead.
+      heroVideoId: cp.hero_video_id || '',
       sortOrder: cp.sort_order,
       status: cp.status,
       createdAt: cp.created_at || null,
@@ -74,6 +77,9 @@ export async function buildContentSnapshot(db, { publishedOnly }) {
     fullDescription: s.full_description || '',
     heroMediaType: s.hero_media_type || 'image',
     coverImage: s.cover_image || '',
+    // Migration 0005: which video sits at the top when heroMediaType is
+    // 'video'. Gallery media never influences this.
+    heroVideoId: s.hero_video_id || '',
     practicalInfo: s.practical_info || '',
     sortOrder: s.sort_order,
     status: s.status,

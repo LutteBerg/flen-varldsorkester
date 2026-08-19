@@ -30,6 +30,7 @@ function buildSnapshot() {
     fullDescription: s.fullDescription || '',
     heroMediaType: s.heroMediaType || 'image',
     coverImage: s.coverImage || '',
+    heroVideoId: s.heroVideoId || '',
     practicalInfo: s.practicalInfo || '',
     galleryImages: (s.galleryImages || []).map((img, idx) => ({
       id: `seed-${s.id}-img-${idx}`,
@@ -68,6 +69,11 @@ function buildSnapshot() {
       shortDescription: c.shortDescription || '',
       body: c.body || '',
       coverImage: '',
+      // Dev parity with production after migration 0005: child pages that
+      // have a video show the first one at the top (that is what the
+      // migration backfilled), and it is the ONLY thing that puts a video
+      // there — see src/lib/heroMedia.js.
+      heroVideoId: (c.videos || []).length > 0 ? `seed-${s.id}-child-${ci}-vid-0` : '',
       sortOrder: ci,
       status: 'published',
       galleryImages: (c.galleryImages || []).map((img, idx) => ({

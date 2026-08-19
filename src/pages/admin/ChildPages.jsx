@@ -63,8 +63,11 @@ export default function AdminChildPages() {
     setSaved(false);
     setSaving(true);
     try {
-      if (isNew) await contentRepository.createChildPage(editing);
-      else       await contentRepository.updateChildPage(editing.id, editing);
+      // heroVideoId is normalised to a string so that clearing it ('') is sent
+      // to the server instead of being dropped as `undefined`.
+      const payload = { ...editing, heroVideoId: editing.heroVideoId || '' };
+      if (isNew) await contentRepository.createChildPage(payload);
+      else       await contentRepository.updateChildPage(editing.id, payload);
       setSaved(true);
       await load();
       setTimeout(() => { setSaved(false); setEditing(null); }, 1200);
@@ -122,8 +125,35 @@ export default function AdminChildPages() {
             <textarea className="form-control" value={editing.body || ''} onChange={(e) => setEditing({ ...editing, body: e.target.value })} />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Bild för Hero (URL eller /assets/...)</label>
+          <div className="form-group" style={{ padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #ddd' }}>
+            <h4 style={{ marginBottom: 4 }}>Media högst upp på sidan</h4>
+            <p style={{ fontSize: '0.85rem', color: '#666', marginTop: 0, marginBottom: 16 }}>
+              Det här är den <strong>enda</strong> platsen som styr toppen av sidan.
+              Media du lägger till i <em>Tilldelad media</em> längre ner hamnar bara i
+              galleriet och ändrar aldrig toppen.
+            </p>
+
+            <label className="form-label">Video högst upp</label>
+            {(editing.videos || []).length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: '#666', marginTop: 4, marginBottom: 16 }}>
+                Den här undersidan har ingen video ännu. Lägg till en YouTube-video under
+                <em> Tilldelad media</em> längre ner — sedan kan du välja den här.
+              </p>
+            ) : (
+              <select
+                className="form-control"
+                style={{ marginBottom: 16 }}
+                value={editing.heroVideoId || ''}
+                onChange={(e) => setEditing({ ...editing, heroVideoId: e.target.value })}
+              >
+                <option value="">— Ingen video (fotot nedan visas) —</option>
+                {(editing.videos || []).map(v => (
+                  <option key={v.id} value={v.id}>{v.title || v.caption || v.url}</option>
+                ))}
+              </select>
+            )}
+
+            <label className="form-label">Foto högst upp (URL eller /assets/...)</label>
             <input className="form-control" value={editing.coverImage || ''} onChange={(e) => setEditing({ ...editing, coverImage: e.target.value })} />
           </div>
 

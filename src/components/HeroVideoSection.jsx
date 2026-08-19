@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Volume2, VolumeX, Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { cssUrl } from '../lib/heroMedia';
 import './HeroVideoSection.css';
 
 // Section hero with a looping YouTube background and a minimal title ribbon.
@@ -61,7 +62,7 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
         {fallbackImage && (
           <div
             className="hero-video-bg-img"
-            style={{ backgroundImage: `url(${fallbackImage})` }}
+            style={{ backgroundImage: cssUrl(fallbackImage) }}
             aria-hidden="true"
           />
         )}
@@ -78,7 +79,7 @@ export default function HeroVideoSection({ video, title, backTo, fallbackImage, 
         {fallbackImage && (
           <div
             className="hero-video-bg-img"
-            style={{ backgroundImage: `url(${fallbackImage})` }}
+            style={{ backgroundImage: cssUrl(fallbackImage) }}
             aria-hidden="true"
           />
         )}

@@ -9,7 +9,15 @@ import MediaTabs from '../components/MediaTabs';
 import MediaPreviewGrid from '../components/MediaPreviewGrid';
 import HeroVideoSection from '../components/HeroVideoSection';
 import MusaikFeatureCard from '../components/MusaikFeatureCard';
+import FacebookFeed from '../components/FacebookFeed';
+import { resolveHeroVideo } from '../lib/heroMedia';
 import './Section.css';
+
+// Sections that show the "Från Facebook" sidebar widget (between
+// Praktisk Information and Evenemang). Add a slug here to enable it for
+// another section — the backend token in functions/api/facebook-feed.js
+// is shared.
+const FACEBOOK_FEED_SECTIONS = ['malarateljen'];
 
 // Every section page now uses HeroVideoSection — it handles both the
 // video-hero case (pinned/first video → looping background) and the
@@ -54,14 +62,12 @@ export default function Section() {
 
   const sortedVideos = [...(section.videos || [])].sort(byPinnedThenOrder);
   const sortedImages = [...(section.galleryImages || [])].sort(byPinnedThenOrder);
-  const pinnedVideo = sortedVideos.find(v => v.pinned);
 
-  // Always use HeroVideoSection. If a pinned video exists OR section is
-  // marked as video-hero, prefer the video; otherwise the cover image
-  // becomes the fallback background.
+  // Always use HeroVideoSection. What sits at the top is decided ONLY by the
+  // section's own hero settings (see src/lib/heroMedia.js) — media added to
+  // the gallery below can no longer take over the header of the page.
   const useNewHero = true;
-  const heroVideo = pinnedVideo
-    || (section.heroMediaType === 'video' ? sortedVideos[0] : null);
+  const heroVideo = resolveHeroVideo(section, sortedVideos);
   // Kept for downstream layout flags (e.g. full-bleed adjustments).
   const isVideoHero = !!heroVideo;
 
@@ -151,6 +157,8 @@ export default function Section() {
               {section.practicalInfo}
             </div>
           </div>
+
+          {FACEBOOK_FEED_SECTIONS.includes(slug) && <FacebookFeed />}
 
           <div className="events-section">
             <h3 className="block-title" style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Evenemang</h3>

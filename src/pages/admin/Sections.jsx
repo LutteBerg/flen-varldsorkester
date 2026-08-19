@@ -77,6 +77,8 @@ export default function Sections() {
         fullDescription: editing.fullDescription,
         heroMediaType: editing.heroMediaType,
         coverImage: editing.coverImage,
+        // '' clears the choice on the server ("photo at the top").
+        heroVideoId: editing.heroVideoId || '',
         practicalInfo: editing.practicalInfo,
         status: editing.status || 'published',
       });
@@ -105,15 +107,45 @@ export default function Sections() {
           </div>
 
           <div className="form-group" style={{marginTop: 24, padding: 16, background: '#f9f9f9', borderRadius: 8, border: '1px solid #ddd'}}>
-            <h4 style={{marginBottom: 16}}>Media i början av sidan (Hero)</h4>
+            <h4 style={{marginBottom: 4}}>Media högst upp på sidan</h4>
+            <p style={{fontSize: '0.85rem', color: '#666', marginTop: 0, marginBottom: 16}}>
+              Det här är den <strong>enda</strong> platsen som styr toppen av sidan.
+              Bilder och videor du lägger till i <em>Tilldelad media</em> längre ner hamnar
+              bara i galleriet och ändrar aldrig toppen.
+            </p>
 
             <label className="form-label">Vad ska visas högst upp?</label>
             <select className="form-control" style={{marginBottom: 16}} value={editing.heroMediaType || 'image'} onChange={(e) => handleChange('heroMediaType', e.target.value)}>
-              <option value="image">Fast Bild (Foto)</option>
-              <option value="video">Bakgrundsvideo (kräver en fäst video)</option>
+              <option value="image">Foto</option>
+              <option value="video">Video (spelas som bakgrund)</option>
             </select>
 
-            <label className="form-label">Omslagsbild (visas på startsidan, om "Fast Bild" är valt)</label>
+            {editing.heroMediaType === 'video' && (
+              <div style={{marginBottom: 16}}>
+                <label className="form-label">Vilken video ska ligga högst upp?</label>
+                {(editing.videos || []).length === 0 ? (
+                  <p style={{fontSize: '0.85rem', color: '#a02828', marginTop: 4}}>
+                    Den här sektionen har ingen video ännu. Lägg till en YouTube-video under
+                    <em> Tilldelad media</em> längre ner — sedan kan du välja den här.
+                  </p>
+                ) : (
+                  <select
+                    className="form-control"
+                    value={editing.heroVideoId || ''}
+                    onChange={(e) => handleChange('heroVideoId', e.target.value)}
+                  >
+                    <option value="">— Ingen video vald (fotot visas) —</option>
+                    {(editing.videos || []).map(v => (
+                      <option key={v.id} value={v.id}>{v.title || v.caption || v.url}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            <label className="form-label">
+              Foto högst upp{editing.heroMediaType === 'video' ? ' (reserv om videon inte kan spelas)' : ''} — används också som bild på startsidan
+            </label>
             <CoverImagePicker
               value={editing.coverImage || ''}
               images={editing.galleryImages || []}
@@ -122,7 +154,6 @@ export default function Sections() {
               uploading={coverUploading}
               readOnly={readOnly}
             />
-            <p style={{fontSize: '0.85rem', color: '#666', marginTop: 8}}>För video, lägg till en video nedan och markera "Fäst överst".</p>
           </div>
 
           <div className="form-group" style={{marginTop: 24}}>

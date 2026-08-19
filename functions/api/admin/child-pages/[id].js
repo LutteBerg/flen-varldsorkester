@@ -20,6 +20,8 @@ export const onRequestPut = wrap(async ({ params, request, env }) => {
     short_description: stringOr(body.shortDescription, null),
     body:              stringOr(body.body, null),
     cover_image:       stringOr(body.coverImage, null),
+    // '' is a meaningful value here: "no video at the top, show the photo".
+    hero_video_id:     stringOr(body.heroVideoId, null),
     sort_order:        Number.isInteger(body.sortOrder) ? body.sortOrder : null,
     status:            ['published', 'draft'].includes(body.status) ? body.status : null,
   };

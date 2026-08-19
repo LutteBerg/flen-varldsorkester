@@ -97,6 +97,10 @@ export default function MediaManager({ parent, existing, onChange }) {
       <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 12 }}>
         Media sparas direkt. Knappen <strong>Avbryt</strong> nedan ångrar bara ändringar i textfälten på sidan — inte mediainställningar.
       </p>
+      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 12 }}>
+        Allt här hamnar i <strong>galleriet</strong>. Toppen av sidan ändras bara i rutan
+        <em> Media högst upp på sidan</em> längre upp.
+      </p>
 
       {/* Existing items list */}
       {(!items || items.length === 0) && (
@@ -105,7 +109,7 @@ export default function MediaManager({ parent, existing, onChange }) {
 
       {canReorder && (
         <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 8 }}>
-          Dra raderna i <strong>handtaget</strong> (⠿) för att ändra ordningen. Den första videon/bilden visas först på sidan.
+          Dra raderna i <strong>handtaget</strong> (⠿) för att ändra ordningen i galleriet.
           {reordering && <span style={{ marginLeft: 8, color: 'var(--color-orange)' }}>Sparar ordning…</span>}
         </p>
       )}
@@ -235,7 +239,7 @@ function MediaRow({ item, isEditing, onStartEdit, onCancelEdit, onSaved, onChang
       <MediaThumb item={item} isVideo={isVideo} />
       <span style={{ flex: 1, fontSize: '0.9rem', minWidth: 0, overflowWrap: 'anywhere' }}>
         <strong>{isVideo ? 'Video' : 'Bild'}:</strong> {label || '(utan titel)'}
-        {item.pinned && <span style={{ color: 'var(--color-orange)', marginLeft: 8, fontWeight: 600 }}>(fäst)</span>}
+        {item.pinned && <span style={{ color: 'var(--color-orange)', marginLeft: 8, fontWeight: 600 }}>(först i galleriet)</span>}
         {item.status === 'draft' && <span style={{ color: '#8a6d3b', marginLeft: 8 }}>(utkast)</span>}
       </span>
       <button
@@ -318,7 +322,7 @@ function EditMediaForm({ item, onCancel, onSaved, readOnly }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-          Fäst överst
+          Visa först i galleriet
         </label>
         <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="published">Publicerad</option>
@@ -462,7 +466,7 @@ function UploadForm({ parent, onSaved, readOnly }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-          Fäst överst
+          Visa först i galleriet
         </label>
         <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="published">Publicerad</option>
@@ -540,7 +544,7 @@ function YouTubeForm({ parent, onSaved, readOnly }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-          Fäst överst
+          Visa först i galleriet
         </label>
         <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="published">Publicerad</option>

@@ -8,6 +8,7 @@ import MediaTabs from '../components/MediaTabs';
 import MediaPreviewGrid from '../components/MediaPreviewGrid';
 import VideoModal from '../components/VideoModal';
 import NewsModal from '../components/NewsModal';
+import { resolveHeroVideo } from '../lib/heroMedia';
 import '../pages/Section.css';
 
 // Child-page renderer (e.g. /flen-varldsorkester/musaik-projektet).
@@ -76,7 +77,9 @@ export default function ChildPage() {
   // Pinned-first; API already sorts but normalize again for safety.
   const videos = [...(childPage.videos || [])].sort(byPinnedThenOrder);
   const images = [...(childPage.galleryImages || [])].sort(byPinnedThenOrder);
-  const leadVideo = videos[0];
+  // Only the video explicitly chosen in admin ("Media högst upp på sidan")
+  // becomes the header. Videos added to the gallery stay in the gallery.
+  const leadVideo = resolveHeroVideo(childPage, videos);
   const hasHeroVideo = !!leadVideo;
 
   const hasImages = images.length > 0;
